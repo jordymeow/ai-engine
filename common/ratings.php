@@ -27,15 +27,8 @@ if ( !class_exists( 'MeowKit_MWAI_Ratings' ) ) {
 
       // Add the hooks
       register_activation_hook( $mainfile, [ $this, 'show_meowapps_create_rating_date' ] );
-      if ( is_admin() ) {
-        $rating_date = $this->create_rating_date();
-        if ( time() > $rating_date ) {
-          add_action( 'admin_notices', [ $this, 'admin_notices_rating' ] );
-          add_filter( 'safe_style_css', function ( $styles ) {
-            $styles[] = 'display';
-            return $styles;
-          } );
-        }
+      if ( is_admin() && time() > $this->create_rating_date() ) {
+        add_action( 'admin_footer', [ $this, 'print_review' ] );
       }
     }
 
@@ -55,111 +48,53 @@ if ( !class_exists( 'MeowKit_MWAI_Ratings' ) ) {
       return $rating_date;
     }
 
-    public function admin_notices_rating() {
-      // Verify the nonce before acting on any of the review-notice buttons (CSRF protection).
-      $nonce_ok = isset( $_POST[ $this->prefix . '_rating_nonce' ] )
-        && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST[ $this->prefix . '_rating_nonce' ] ) ), $this->prefix . '_rating' );
-      if ( $nonce_ok && isset( $_POST[$this->prefix . '_remind_me'] ) ) {
-        $two_weeks = strtotime( '+2 weeks' );
-        $six_weeks = strtotime( '+6 weeks' );
-        $future_date = mt_rand( $two_weeks, $six_weeks );
-        update_option( $this->prefix . '_rating_date', $future_date, false );
-        return;
-      }
-      else if ( $nonce_ok && isset( $_POST[$this->prefix . '_never_remind_me'] ) ) {
-        $twenty_years = strtotime( '+5 years' );
-        update_option( $this->prefix . '_rating_date', $twenty_years, false );
-        return;
-      }
-      else if ( $nonce_ok && isset( $_POST[$this->prefix . '_did_it'] ) ) {
-        $twenty_years = strtotime( '+100 years' );
-        update_option( $this->prefix . '_rating_date', $twenty_years, false );
-        return;
-      }
-      $rating_date = get_option( $this->prefix . '_rating_date' );
-      $html = wp_kses_post( '<div class="notice notice-success" data-rating-date="' .
-        date( 'Y-m-d', $rating_date ) . '">' );
-      $esc_nice_name = esc_attr( $this->nice_name_from_file( $this->mainfile ) );
-      if ( $esc_nice_name === 'Wp Retina 2x Pro' ) {
-        $esc_nice_name = 'Perfect Images';
-      }
-      else if ( $esc_nice_name === 'Wp Retina 2x' ) {
-        $esc_nice_name = 'Perfect Images';
-      }
-      else if ( $esc_nice_name === 'Ai Engine Pro' ) {
-        $esc_nice_name = 'AI Engine';
-      }
-      $esc_short_url = esc_attr( $this->nice_short_url_from_file( $this->mainfile ) );
-      $escaped_prefix = $this->prefix;
-      $rating_nonce = esc_attr( wp_create_nonce( $this->prefix . '_rating' ) );
-      $html .= '<p style="font-size: 100%;">';
-      // Translators: %1$s is a plugin nicename, %2$s is a short url (slug)
-      $url = 'https://wordpress.org/support/plugin/' . $esc_short_url . '/reviews/';
-      $html .= sprintf(
-        __( '<h2 style="margin: 0" class="title">You have been using <b>%1$s</b> for some time now. Thank you! 💕</h2><p>If you have a minute, can you write a <b><a target="_blank" href="' . $url . '">little review</a></b> for me? That would <b>really</b> bring me joy and motivation! 💫 <br />Don\'t hesitate to <b>share your feature requests</b> with the review, I always check them and try my best.</p>
-                                                                                                          ', $this->domain ),
-        $esc_nice_name
-      );
-      $html .= '<div style="padding: 5px 0 12px 0; display: flex; align-items: center;">';
-      $html .= '<a target="_blank" class="button button-primary" style="margin-right: 10px;" href="' . $url . '">
-                                                                                                      ✏️ Write Review
-                                                                                                      </a>
-                                                                                                      <form method="post" action="" style="margin-right: 10px;">
-                                                                                                      <input type="hidden" name="' . $escaped_prefix . '_did_it" value="true"><input type="hidden" name="' . $escaped_prefix . '_rating_nonce" value="' . $rating_nonce . '">
-                                                                                                      <input type="submit" name="submit" id="submit" class="button button-secondary" value="'
-      . __( '✌️ Done!', $this->domain ) . '">
-                                                                                                        </form>
+    /**
+     * The review ask is one quiet line under the plugin's header (NekoHeader reads
+     * window.meowReviews), only on the plugin's own screens. It replaced a notice shown on every
+     * admin page, which people dismissed while busy elsewhere (Jordy, 10-31). Same timing and the
+     * same option as before, so people who already said done or hide are never asked again.
+     */
+    public function print_review() {
+      $slug = $this->nice_short_url_from_file( $this->mainfile );
+      $review = [
+        'prefix' => $this->prefix,
+        'name' => $this->nice_name(),
+        'url' => 'https://wordpress.org/support/plugin/' . $slug . '/reviews/#new-post',
+        'ajax' => admin_url( 'admin-ajax.php' ),
+        'nonce' => wp_create_nonce( 'meowapps_review' ),
+      ];
+      echo '<script>window.meowReviews = window.meowReviews || {}; window.meowReviews[' .
+        wp_json_encode( $slug ) . '] = ' . wp_json_encode( $review ) . ';</script>';
+    }
 
-                                                                                                        <div style="flex: auto;"></div>
+    /**
+     * Later / never / done from the review line. admin-ajax, not REST: some plugins only build
+     * their admin side when is_admin(), which is true for admin-ajax.php and false for REST, so a
+     * REST route registered from here didn't exist for them. Hooked from the admin class.
+     */
+    public static function ajax_review() {
+      check_ajax_referer( 'meowapps_review' );
+      if ( !current_user_can( 'manage_options' ) ) {
+        wp_send_json_error();
+      }
+      $prefix = isset( $_POST['prefix'] ) ? sanitize_key( wp_unslash( $_POST['prefix'] ) ) : '';
+      $choice = isset( $_POST['choice'] ) ? sanitize_key( wp_unslash( $_POST['choice'] ) ) : '';
+      $dates = [
+        'later' => mt_rand( strtotime( '+2 weeks' ), strtotime( '+6 weeks' ) ),
+        'never' => strtotime( '+5 years' ),
+        'done' => strtotime( '+100 years' ),
+      ];
+      if ( !$prefix || !isset( $dates[ $choice ] ) || get_option( $prefix . '_rating_date' ) === false ) {
+        wp_send_json_error();
+      }
+      update_option( $prefix . '_rating_date', $dates[ $choice ], false );
+      wp_send_json_success();
+    }
 
-                                                                                                        <form method="post" action="" style="margin-right: 10px;">
-                                                                                                        <input type="hidden" name="' . $escaped_prefix . '_remind_me" value="true"><input type="hidden" name="' . $escaped_prefix . '_rating_nonce" value="' . $rating_nonce . '">
-                                                                                                        <input type="submit" name="submit" id="submit" class="button button-secondary" value="'
-        . __( '⏰ Remind me later', $this->domain ) . '">
-                                                                                                          </form>
-
-                                                                                                          <form method="post" action="">
-                                                                                                          <input type="hidden" name="' . $escaped_prefix . '_never_remind_me" value="true"><input type="hidden" name="' . $escaped_prefix . '_rating_nonce" value="' . $rating_nonce . '">
-                                                                                                          <input type="submit" name="submit" id="submit" class="button-link" style="font-size: small;" value="'
-          . __( 'Hide', $this->domain ) . '">
-                                                                                                            </form>
-                                                                                                            </div>';
-      $html .= '</div>';
-      echo wp_kses( $html, [
-        'div' => [
-          'class' => [],
-          'data-rating-date' => [],
-          'style' => [],
-        ],
-        'p' => [
-          'style' => [],
-        ],
-        'h2' => [
-          'class' => [],
-          'style' => []
-        ],
-        'b' => [],
-        'br' => [],
-        'a' => [
-          'href' => [],
-          'target' => [],
-          'class' => [],
-          'style' => [],
-        ],
-        'form' => [
-          'method' => [],
-          'action' => [],
-          'class' => [],
-          'style' => [],
-        ],
-        'input' => [
-          'type' => [],
-          'name' => [],
-          'value' => [],
-          'id' => [],
-          'class' => [],
-        ],
-      ] );
+    public function nice_name() {
+      $name = $this->nice_name_from_file( $this->mainfile );
+      $names = [ 'Wp Retina 2x Pro' => 'Perfect Images', 'Wp Retina 2x' => 'Perfect Images', 'Ai Engine Pro' => 'AI Engine', 'Ai Engine' => 'AI Engine' ];
+      return isset( $names[ $name ] ) ? $names[ $name ] : preg_replace( '/ Pro$/', '', $name );
     }
 
     public function nice_short_url_from_file( $file ) {

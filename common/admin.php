@@ -46,6 +46,11 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
       $this->disableReview = $disableReview;
       self::register_copy();
 
+      // Before the AJAX early return below: the review line's Later / never / done.
+      if ( !$disableReview ) {
+        add_action( 'wp_ajax_meowapps_review', [ 'MeowKit_MWAI_Ratings', 'ajax_review' ] );
+      }
+
       if ( is_admin() ) {
 
         // Skip AJAX and REST requests to avoid unnecessary processing
@@ -192,6 +197,10 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
         add_filter( 'meowapps_plugins_status', [ $this, 'status_row' ] );
         // The site facts the Health tab explains, printed in the footer by the newest copy only.
         add_action( 'admin_footer', [ $this, 'print_site_facts' ] );
+        // Free builds: the Pro prices for the hover card on the silver header tile.
+        if ( !$this->isPro ) {
+          add_action( 'admin_footer', [ $this, 'print_pro_prices' ] );
+        }
         if ( !$this->disableReview ) {
           new MeowKit_MWAI_Ratings( $this->prefix, $this->mainfile, $this->domain );
         }
@@ -767,6 +776,30 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
       // older one during a rollout, so it cannot be trusted to print them.
       $rows = apply_filters( 'meowapps_plugins_status', [] );
       echo '<script type="application/json" id="meow-common-status">' . wp_json_encode( array_values( $rows ), JSON_HEX_TAG | JSON_HEX_AMP ) . '</script>';
+    }
+
+    /**
+     * window.meowPrices for the silver tile's hover card ("Pro from $19 a year"). Read from
+     * prices.json, which the release copies into common from meowapps.com/prices.json: a free plugin
+     * must never call our server itself (wp.org guideline 7), so the price ships with the plugin.
+     */
+    public function print_pro_prices() {
+      if ( empty( $_GET['page'] ) || !empty( $GLOBALS['meowapps_prices_printed'] ) ) {
+        return;
+      }
+      $file = __DIR__ . '/prices.json';
+      $data = is_readable( $file ) ? json_decode( (string) file_get_contents( $file ), true ) : null;
+      if ( empty( $data['plugins'] ) || !is_array( $data['plugins'] ) ) {
+        return;
+      }
+      $GLOBALS['meowapps_prices_printed'] = true;
+      $prices = [];
+      foreach ( $data['plugins'] as $slug => $p ) {
+        if ( !empty( $p['from'] ) ) {
+          $prices[ sanitize_key( $slug ) ] = [ 'from' => (float) $p['from'], 'monthly' => (float) ( $p['monthly'] ?? 0 ) ];
+        }
+      }
+      echo '<script>window.meowPrices = Object.assign(window.meowPrices || {}, ' . wp_json_encode( $prices ) . ');</script>';
     }
 
     public function site_facts() {

@@ -45,11 +45,23 @@ class Meow_MWAI_Labs_MCP {
   // Tools with an "action" argument (list, get, update…): whether a call writes depends on it.
   private $tool_mixed = [];
   private $tool_levels_raw = [];
+  // Tools that come from WordPress Abilities (labs/mcp-abilities.php).
+  private $tool_abilities = [];
   // A level other than 'read' says who may call a tool, not that it writes: 'admin' guards
   // reads too (wp_get_users, wp_get_option, a theme's AI generator). So a change also needs a
   // write verb in the name, or in the "action" argument of a tool that does several things.
-  private const WRITE_VERBS = '/(^|_)(create|update|delete|set|add|remove|upload|write|alter|edit|publish|insert|move|trash|import|replace|assign|activate|deactivate|install|uninstall|switch|translate|link|send|schedule|restore|duplicate|approve|reply|mark|copy|rename|mkdir|put|cancel|refund|resolve|merge|subscribe|unsubscribe|revoke|enable|disable|reset|clear|purge|save|sync|empty|close)(_|$)/i';
+  private const WRITE_VERBS = '/(^|[_-])(create|update|delete|set|add|remove|upload|write|alter|edit|publish|insert|move|trash|import|replace|assign|activate|deactivate|install|uninstall|switch|translate|link|send|schedule|restore|duplicate|approve|reply|mark|copy|rename|mkdir|put|cancel|refund|resolve|merge|subscribe|unsubscribe|revoke|enable|disable|reset|clear|purge|save|sync|empty|close)([_-]|$)/i';
   // Set when the OAuth grant was approved as Read-only: only 'read' tools are listed or run.
+  /** Tools that delete or change the site beyond content: always flagged destructive for clients. */
+  public const RISKY_TOOLS = [
+    'wp_delete_post', 'wp_delete_media', 'wp_delete_term', 'wp_delete_comment', 'wp_delete_note',
+    'wp_delete_post_meta', 'wp_delete_plugin', 'wp_delete_theme', 'wp_plugin_delete_path',
+    'wp_theme_delete_path', 'wc_delete_product', 'wc_delete_review', 'wp_update_option',
+    'wp_activate_plugin', 'wp_deactivate_plugin', 'wp_install_plugin', 'wp_install_theme',
+    'wp_update_plugin', 'wp_update_theme', 'wp_switch_theme', 'wp_create_user', 'wp_update_user',
+    'wp_plugin_alter_file', 'wp_theme_alter_file', 'wp_db_query', 'wc_bulk_update_stock',
+  ];
+
   private $read_only_grant = false;
   // Placeholder for OAuth integration. Currently unused and kept for
   // future implementation once the security model is revised.
@@ -74,7 +86,7 @@ class Meow_MWAI_Labs_MCP {
   public const LIMITED_SESSION_TOOLS = [
     'mcp_ping',
     'wp_get_posts', 'wp_get_post', 'wp_get_post_snapshot', 'wp_get_post_types', 'wp_count_posts',
-    'wp_create_post', 'wp_update_post', 'wp_alter_post', 'wp_write_blocks',
+    'wp_create_post', 'wp_update_post', 'wp_alter_post', 'wp_write_blocks', 'wp_get_blocks', 'wp_edit_blocks',
     'wp_list_block_patterns', 'wp_insert_block_pattern',
     'wp_get_post_meta', 'wp_update_post_meta',
     'wp_get_taxonomies', 'wp_get_terms', 'wp_count_terms', 'wp_get_post_terms',
@@ -83,6 +95,9 @@ class Meow_MWAI_Labs_MCP {
     'wp_create_note', 'wp_update_note', 'wp_delete_note',
     'wp_get_media', 'wp_count_media', 'wp_upload_media', 'wp_upload_request', 'wp_update_media',
     'wp_set_featured_image', 'mwai_vision', 'mwai_image',
+    'mcp_list_changes', 'mcp_undo_change', 'wp_get_seo', 'wp_update_seo', 'acf_get_fields', 'acf_update_fields',
+    'wp_get_rendered', 'wp_get_revisions', 'wp_restore_revision', 'wp_moderate_comments', 'wp_preview_link',
+    'wp_get_shortcodes', 'wp_edit_shortcodes',
   ];
 
   #region Initialize
@@ -100,6 +115,7 @@ class Meow_MWAI_Labs_MCP {
     $this->oauth = new Meow_MWAI_Labs_MCP_OAuth( $core, $this );
     require_once __DIR__ . '/mcp-usage.php';
     new Meow_MWAI_Labs_MCP_Usage( $this );
+    require_once __DIR__ . '/mcp-undo.php';
 
     add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
   }
@@ -509,8 +525,44 @@ class Meow_MWAI_Labs_MCP {
               ],
               'capabilities' => (object) [
                 'tools' => new stdClass(),
+                'prompts' => new stdClass(),
               ],
+              'instructions' => $this->instructions(),
             ],
+          ];
+          break;
+
+        case 'prompts/list':
+          $reply = [
+            'jsonrpc' => '2.0',
+            'id' => $id,
+            'result' => [ 'prompts' => array_map( function ( $prompt ) {
+              unset( $prompt['text'] );
+              return $prompt;
+            }, $this->prompts() ) ],
+          ];
+          break;
+
+        case 'prompts/get':
+          $name = (string) ( $data['params']['name'] ?? '' );
+          $args = (array) ( $data['params']['arguments'] ?? [] );
+          $found = null;
+          foreach ( $this->prompts() as $prompt ) {
+            if ( $prompt['name'] === $name ) {
+              $found = $prompt;
+            }
+          }
+          $reply = $found ? [
+            'jsonrpc' => '2.0',
+            'id' => $id,
+            'result' => [
+              'description' => $found['description'],
+              'messages' => [ [ 'role' => 'user', 'content' => [ 'type' => 'text', 'text' => $found['text']( $args ) ] ] ],
+            ],
+          ] : [
+            'jsonrpc' => '2.0',
+            'id' => $id,
+            'error' => [ 'code' => -32602, 'message' => "Unknown prompt: {$name}" ],
           ];
           break;
 
@@ -932,6 +984,7 @@ class Meow_MWAI_Labs_MCP {
     switch ( $tool ) {
       case 'wp_get_post':
       case 'wp_get_post_snapshot':
+      case 'wp_get_blocks':
       case 'wp_get_post_meta':
       case 'wp_get_post_terms':
         if ( !$post_id || !current_user_can( 'read_post', $post_id ) ) {
@@ -1008,6 +1061,7 @@ class Meow_MWAI_Labs_MCP {
 
       case 'wp_alter_post':
       case 'wp_write_blocks':
+      case 'wp_edit_blocks':
       case 'wp_insert_block_pattern':
       case 'wp_update_post_meta':
       case 'wp_update_media':
@@ -1115,6 +1169,11 @@ class Meow_MWAI_Labs_MCP {
       $action = is_array( $args ) ? (string) ( $args['action'] ?? '' ) : '';
       return $action !== '' && (bool) preg_match( self::WRITE_VERBS, $action );
     }
+    // An ability not marked read-only can change the site, whatever its name: SiteOrigin's
+    // "layout-update" declared no hints and slipped past History, undo and approvals.
+    if ( !empty( $this->tool_abilities[ $tool ] ) ) {
+      return true;
+    }
     return ( $this->tool_levels_raw[ $tool ] ?? null ) === 'write' || (bool) preg_match( self::WRITE_VERBS, $tool );
   }
 
@@ -1135,6 +1194,32 @@ class Meow_MWAI_Labs_MCP {
         ],
         'accessLevel' => 'read',
       ],
+      [
+        'name' => 'mcp_list_changes',
+        'description' => 'List the recent changes made on this site through MCP (by any assistant, newest first), with their ID, what they changed, and whether they can be undone. Use it before mcp_undo_change when the user asks to revert something that was not your last change.',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'limit' => [ 'type' => 'integer', 'description' => 'How many changes to list (default 10, max 50).' ],
+          ],
+          'required' => [],
+        ],
+        'annotations' => [ 'readOnlyHint' => true, 'destructiveHint' => false, 'openWorldHint' => false ],
+        'accessLevel' => 'read',
+      ],
+      [
+        'name' => 'mcp_undo_change',
+        'description' => 'Undo a change made through MCP: puts back what it replaced (post fields, meta, terms, options, plugins...). Pass "last" to undo your own latest change, or an ID from mcp_list_changes. Refused when the item was edited again since, so newer work is never erased; tell the user to check it in WordPress instead. An undo can itself be undone.',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'id' => [ 'type' => 'string', 'description' => 'The change ID (a number from mcp_list_changes), or "last".' ],
+          ],
+          'required' => [ 'id' ],
+        ],
+        'annotations' => [ 'readOnlyHint' => false, 'destructiveHint' => false, 'openWorldHint' => false ],
+        'accessLevel' => 'write',
+      ],
     ];
 
     if ( $this->logging ) {
@@ -1154,6 +1239,7 @@ class Meow_MWAI_Labs_MCP {
         $this->tool_writes[ $tool['name'] ] = isset( $tool['accessLevel'] ) && $tool['accessLevel'] !== 'read'
           && empty( ( (array) ( $tool['annotations'] ?? [] ) )['readOnlyHint'] );
         $this->tool_levels_raw[ $tool['name'] ] = $tool['accessLevel'] ?? null;
+        $this->tool_abilities[ $tool['name'] ] = ( $tool['source'] ?? '' ) === 'ability';
         // Schemas without arguments use an empty object for properties (JSON "{}"), not an array.
         $props = $tool['inputSchema']['properties'] ?? [];
         $this->tool_mixed[ $tool['name'] ] = is_array( $props ) ? isset( $props['action'] ) : isset( $props->action );
@@ -1245,7 +1331,9 @@ class Meow_MWAI_Labs_MCP {
     ];
 
     if ( isset( $tool['description'] ) && $tool['description'] !== '' ) {
-      $normalized['description'] = wp_strip_all_tags( (string) $tool['description'] );
+      // Kept as is: models read it as text. Stripping tags erased our own examples, such as
+      // "<!-- wp:paragraph -->" in wp_alter_post and the "<upload_url>" placeholder of wp_upload_request.
+      $normalized['description'] = trim( (string) $tool['description'] );
     }
 
     if ( isset( $tool['annotations'] ) && is_array( $tool['annotations'] ) ) {
@@ -1253,6 +1341,15 @@ class Meow_MWAI_Labs_MCP {
       if ( !empty( $annotations ) ) {
         $normalized['annotations'] = $annotations;
       }
+    }
+
+    // Claude and ChatGPT ask the user before a destructive tool runs. The per-file name heuristics
+    // only flagged wp_delete_*, so options, installs, file edits and SQL writes ran unasked.
+    if ( in_array( $name, self::RISKY_TOOLS, true ) ) {
+      $normalized['annotations'] = array_merge( $normalized['annotations'] ?? [], [
+        'readOnlyHint' => false,
+        'destructiveHint' => true,
+      ] );
     }
 
     return $normalized;
@@ -1335,6 +1432,62 @@ class Meow_MWAI_Labs_MCP {
     }
 
     return $normalized;
+  }
+
+  /**
+   * What a freshly connected assistant should know and do first. Without it, people connected,
+   * faced an empty chat and left (Torii, 2026-10: 8 of 16 removals had never made a call).
+   * Mirrors Torii's onboarding (torii-connect src/onboarding.ts), minus its own tools.
+   */
+  private function instructions(): string {
+    $tagline = get_bloginfo( 'description' );
+    $parts = [
+      sprintf(
+        'These tools work on the WordPress site "%s" (%s)%s through AI Engine, with the user\'s own WordPress permissions. Site language: %s.',
+        wp_strip_all_tags( get_bloginfo( 'name' ) ),
+        home_url(),
+        $tagline ? ', "' . wp_strip_all_tags( $tagline ) . '",' : '',
+        get_locale()
+      ),
+      'If the user has not said what they want, look at their latest posts with wp_get_posts and offer three concrete ideas based on their site: for example a short tour of their latest posts, a new draft in their voice, or a quick content audit (posts without a category, featured image or excerpt).',
+      'New posts and pages are drafts unless the user asks to publish; say so when you create one, and give its edit link.',
+      'Deleting moves items to the trash unless the user explicitly asks for a permanent delete.',
+      'Every change can be undone: mcp_list_changes shows them, mcp_undo_change reverts one.',
+    ];
+    $parts = array_merge( $parts, Meow_MWAI_Labs_MCP_Approvals::instructions() );
+    return (string) apply_filters( 'mwai_mcp_instructions', implode( ' ', $parts ) );
+  }
+
+  /** Starter prompts, shown by Claude in its + menu. Same names and words as Torii's, so the menu matches. */
+  private function prompts(): array {
+    return [
+      [
+        'name' => 'tour_my_site',
+        'title' => 'Tour my site',
+        'description' => 'A short tour of your WordPress site: what it is about, the latest posts, and three ideas to improve it.',
+        'text' => fn () => 'Give me a short tour of my WordPress site: look at my five most recent posts with wp_get_posts. Tell me in a few lines what the site is about and how recently it was updated, then suggest three concrete things we could do together right now.',
+      ],
+      [
+        'name' => 'write_a_draft',
+        'title' => 'Write a draft post',
+        'description' => 'Write a new draft post on your site, in the voice of your existing posts.',
+        'arguments' => [ [ 'name' => 'topic', 'description' => 'What the post is about', 'required' => true ] ],
+        'text' => fn ( $a ) => 'Write a draft post on my WordPress site about: ' . ( !empty( $a['topic'] ) ? $a['topic'] : 'a topic you suggest from my recent posts' ) . '. First read two or three of my recent posts to match their tone and length. Use real editor blocks (headings and paragraphs), pick an existing category if one fits, keep it as a draft, and give me the edit link.',
+      ],
+      [
+        'name' => 'audit_my_content',
+        'title' => 'Audit my content',
+        'description' => 'Find what needs attention: posts without a category, featured image or excerpt, old drafts, pending comments.',
+        'text' => fn () => 'Audit the content of my WordPress site: find published posts without a category, a featured image or an excerpt, drafts older than three months, and comments waiting for moderation. Give me a short prioritized list, then offer to fix the easy ones (ask before changing anything).',
+      ],
+      [
+        'name' => 'improve_a_post',
+        'title' => 'Improve a post',
+        'description' => 'Review one of your posts and suggest improvements, then apply the ones you approve.',
+        'arguments' => [ [ 'name' => 'post', 'description' => 'The title (or ID) of the post', 'required' => true ] ],
+        'text' => fn ( $a ) => 'Find my post "' . ( !empty( $a['post'] ) ? $a['post'] : 'my most recent post' ) . '" on my WordPress site and review it: clarity, structure, title, excerpt and categories. Suggest specific improvements, and apply only the ones I approve.',
+      ],
+    ];
   }
 
   private function normalize_annotations( array $annotations, string $tool_name ): array {
@@ -1431,6 +1584,8 @@ class Meow_MWAI_Labs_MCP {
     $status = 'error';
     $error_msg = null;
     $tool_level = null;
+    $journal = false;
+    $change_ids = [];
     $this->arm_fatal_net( $tool, $id );
     try {
       // Ensure tool access levels are populated (each HTTP request starts fresh)
@@ -1490,6 +1645,55 @@ class Meow_MWAI_Labs_MCP {
         ];
         $status = 'success';
         return $response;
+      }
+
+      if ( $tool === Meow_MWAI_Labs_MCP_Undo::UNDO_TOOL && is_array( $args ) && Meow_MWAI_Labs_MCP_Approvals::drafts_only() ) {
+        $refusal = Meow_MWAI_Labs_MCP_Approvals::drafts_refusal( (string) $tool, $args );
+        if ( $refusal !== null ) {
+          $status = 'denied';
+          $error_msg = $refusal;
+          $response = [ 'jsonrpc' => '2.0', 'id' => $id, 'result' => $this->format_tool_result( $refusal ) + [ 'isError' => true ] ];
+          return $response;
+        }
+      }
+      if ( $tool === 'mcp_list_changes' || $tool === Meow_MWAI_Labs_MCP_Undo::UNDO_TOOL ) {
+        $result = $tool === 'mcp_list_changes' ? $this->list_changes( (array) $args ) : $this->undo_change( (array) $args );
+        $change_ids = $result['changeIds'] ?? [];
+        $response = [ 'jsonrpc' => '2.0', 'id' => $id, 'result' => $this->format_tool_result( $result['text'] ) ];
+        if ( !empty( $result['error'] ) ) {
+          $response['result']['isError'] = true;
+          $error_msg = $result['text'];
+        }
+        $status = empty( $result['error'] ) ? 'success' : 'error';
+        return $response;
+      }
+
+      // Drafts only, then approvals (labs/mcp-approvals.php), for writes only.
+      if ( is_array( $args ) && $this->is_write_call( (string) $tool, $args ) ) {
+        if ( Meow_MWAI_Labs_MCP_Approvals::drafts_only() ) {
+          $refusal = Meow_MWAI_Labs_MCP_Approvals::drafts_refusal( (string) $tool, $args );
+          if ( $refusal !== null ) {
+            $status = 'denied';
+            $error_msg = $refusal;
+            $response = [ 'jsonrpc' => '2.0', 'id' => $id, 'result' => $this->format_tool_result( $refusal ) + [ 'isError' => true ] ];
+            return $response;
+          }
+        }
+        if ( Meow_MWAI_Labs_MCP_Approvals::needs_approval( (string) $tool, $args ) ) {
+          $waiting = Meow_MWAI_Labs_MCP_Approvals::gate( (string) $tool, $args, $this->change_context()['client'] );
+          if ( $waiting !== null ) {
+            $status = Meow_MWAI_Labs_MCP_Approvals::STATUS;
+            $error_msg = $waiting;
+            $response = [ 'jsonrpc' => '2.0', 'id' => $id, 'result' => $this->format_tool_result( $waiting ) + [ 'isError' => true ] ];
+            return $response;
+          }
+        }
+      }
+
+      // Journal what a write is about to replace, so it can be undone (labs/mcp-undo.php).
+      if ( is_array( $args ) && $this->is_write_call( (string) $tool, $args ) ) {
+        $journal = true;
+        Meow_MWAI_Labs_MCP_Undo::begin( (string) $tool, $args );
       }
 
       // Let other modules handle their tools
@@ -1581,6 +1785,10 @@ class Meow_MWAI_Labs_MCP {
     }
     finally {
       self::$currentToolCall = null;
+      if ( $journal ) {
+        $change_id = Meow_MWAI_Labs_MCP_Undo::finish( $status === 'success', $this->change_context() );
+        $change_ids = $change_id ? [ $change_id ] : [];
+      }
       $duration_ms = (int) round( ( microtime( true ) - $start ) * 1000 );
       // Fire the action even on access denials and errors so admins can see
       // attempted-but-blocked tool calls in MCP Logs.
@@ -1598,12 +1806,83 @@ class Meow_MWAI_Labs_MCP {
         'user_id' => get_current_user_id(),
         'access_level' => $tool_level,
         'writes' => $this->is_write_call( (string) $tool, $args ),
+        'change_ids' => $change_ids,
       ] );
       if ( $status === 'success' && $tool !== 'mcp_ping' ) {
         $this->bring_review_notice_forward();
         $this->remember_mcp_use();
       }
     }
+  }
+
+  // Who made a change, as the MCP tab names them.
+  private function change_context(): array {
+    return [
+      'user_id' => get_current_user_id(),
+      'client' => Meow_MWAI_Labs_MCP_Usage::client_of( [ 'client_name' => $this->auth_client_name, 'auth_method' => $this->auth_method ] ),
+    ];
+  }
+
+  // An editor (limited session) only sees and undoes their own changes; Undo checks capabilities too.
+  private function list_changes( array $args ): array {
+    $rows = Meow_MWAI_Labs_MCP_Undo::changes( [
+      'limit' => max( 1, min( 50, (int) ( $args['limit'] ?? 10 ) ) ),
+      'user_id' => $this->limited_session ? get_current_user_id() : 0,
+    ] );
+    if ( !$rows ) {
+      return [ 'text' => 'No changes were made through MCP in the last ' . Meow_MWAI_Labs_MCP_Undo::KEEP_DAYS . ' days.' ];
+    }
+    $states = [ 'undoable' => 'can be undone', 'changed' => 'edited again since, cannot be undone', 'undone' => 'already undone', 'none' => 'cannot be undone' ];
+    $lines = [];
+    foreach ( $rows as $row ) {
+      $line = sprintf(
+        '#%d · %s · %s · %s%s · %s',
+        $row['id'],
+        gmdate( 'Y-m-d H:i', $row['time'] ) . ' UTC',
+        $row['client'] ?: 'unknown',
+        $row['tool'],
+        $row['title'] !== '' ? ' on "' . $row['title'] . '"' : '',
+        $states[ $row['status'] ] ?? $row['status']
+      );
+      if ( $row['undoOf'] ) {
+        $line .= ' (undo of #' . $row['undoOf'] . ')';
+      }
+      if ( $row['status'] === 'none' && $row['note'] !== '' ) {
+        $line .= ': ' . $row['note'];
+      }
+      $lines[] = $line;
+    }
+    return [ 'text' => implode( "\n", $lines ) ];
+  }
+
+  private function undo_change( array $args ): array {
+    $id = $args['id'] ?? '';
+    if ( is_string( $id ) && strtolower( trim( $id ) ) === 'last' ) {
+      $id = 0;
+      $context = $this->change_context();
+      foreach ( Meow_MWAI_Labs_MCP_Undo::changes( [ 'limit' => 50, 'user_id' => get_current_user_id(), 'client' => $context['client'] ] ) as $row ) {
+        if ( $row['tool'] !== Meow_MWAI_Labs_MCP_Undo::UNDO_TOOL && $row['status'] !== 'undone' ) {
+          $id = $row['id'];
+          break;
+        }
+      }
+      if ( !$id ) {
+        return [ 'error' => true, 'text' => 'You have no change left to undo. Use mcp_list_changes to see the recent ones.' ];
+      }
+    }
+    $id = (int) $id;
+    if ( $id <= 0 ) {
+      return [ 'error' => true, 'text' => 'Pass a change ID from mcp_list_changes, or "last".' ];
+    }
+    $row = Meow_MWAI_Labs_MCP_Undo::get( $id );
+    if ( $row && $this->limited_session && (int) $row['user_id'] !== get_current_user_id() ) {
+      return [ 'error' => true, 'text' => 'You can only undo your own changes.' ];
+    }
+    $result = Meow_MWAI_Labs_MCP_Undo::undo( [ $id ], false, $this->change_context() );
+    if ( empty( $result['success'] ) ) {
+      return [ 'error' => true, 'text' => $result['message'] ];
+    }
+    return [ 'text' => $result['message'] . ' (change #' . $id . ')', 'changeIds' => $result['changeIds'] ];
   }
 
   // A real tool call is the moment MCP has proven itself, so the review notice

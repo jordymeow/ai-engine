@@ -1,26 +1,30 @@
-// Previous: 3.8.8
-// Current: 3.8.9
+// Previous: 3.8.9
+// Current: 3.9.0
 
 ```javascript
 const { useState, useEffect, useRef, useCallback } = wp.element;
 const { sprintf, _n } = wp.i18n;
 import Styled from 'styled-components';
-import { Plug, Check, Copy, RefreshCw, ExternalLink, Shuffle, Zap, Wrench, Lock, Infinity as Unlimited, Sparkles, ShieldCheck, Boxes } from 'lucide-react';
+import { Plug, Check, Copy, RefreshCw, ExternalLink, Shuffle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import i18n from '@root/i18n';
-import { userData } from '@app/settings';
+import { userData, homeUrl } from '@app/settings';
 import { getNativeMcpGuide } from '@app/helpers/nativeGuides';
 
 const T = i18n.MCP_CONNECT;
 
-const CLAUDE_DIRECTORY_URL = 'https://claude.ai/directory/ai-engine-for-wordpress';
-const CHATGPT_APP_URL = 'https://connect.meowapps.com/?for=chatgpt';
+const toriiLink = (to) => `https://connect.meowapps.com/go?to=${to}&ref=ae-card&site=${encodeURIComponent(homeUrl)}`;
 const START = { claude: 'claude-direct', chatgpt: 'chatgpt-direct' };
-const FACTS = {
-  direct: [ [ Zap, 'FACT_FASTEST' ], [ Wrench, 'FACT_ALL_TOOLS' ], [ Lock, 'FACT_ONLY_YOU' ], [ Unlimited, 'BADGE_FREE' ] ],
-  connector: [ [ Sparkles, 'FACT_ONE_CLICK' ], [ Boxes, 'FACT_CORE_TOOLS' ], [ ShieldCheck, 'FACT_STORES_NOTHING' ], [ Unlimited, 'BADGE_FREE' ] ],
+const ROUTES = {
+  claude: [ { id: 'claude-direct', title: T.ROUTE_DIRECT, tag: T.ROUTE_RECOMMENDED, detail: T.ROUTE_DIRECT_DETAIL },
+    { id: 'claude', title: T.ROUTE_CONNECTOR, detail: T.ROUTE_CONNECTOR_DETAIL } ],
+  chatgpt: [ { id: 'chatgpt-direct', title: T.ROUTE_DIRECT, tag: T.ROUTE_RECOMMENDED, detail: T.ROUTE_DIRECT_DETAIL },
+    { id: 'chatgpt', title: T.ROUTE_CONNECTOR, detail: T.ROUTE_CONNECTOR_DETAIL } ],
+  'claude-code': [ { id: 'claude-code', title: T.ROUTE_SIGN_IN, tag: T.ROUTE_RECOMMENDED, detail: T.ROUTE_SIGN_IN_CODE_DETAIL },
+    { id: 'claude-code-token', title: T.ROUTE_TOKEN, detail: T.ROUTE_TOKEN_DETAIL } ],
+  other: [ { id: 'other', title: T.ROUTE_SIGN_IN, tag: T.ROUTE_RECOMMENDED, detail: T.ROUTE_SIGN_IN_OTHER_DETAIL },
+    { id: 'other-token', title: T.ROUTE_TOKEN, detail: T.ROUTE_TOKEN_DETAIL } ],
 };
-
 const APPS = [
   { id: 'claude', name: 'Claude', mark: 'C', color: '#d97757' },
   { id: 'chatgpt', name: 'ChatGPT', mark: 'G', color: '#10a37f' },
@@ -30,7 +34,7 @@ const APPS = [
 
 const STEPS = {
   claude: [
-    { title: T.CLAUDE_DIR_ADD, link: () => CLAUDE_DIRECTORY_URL, linkLabel: T.CLAUDE_DIR_LINK, detail: T.CLAUDE_DIR_DETAIL },
+    { title: T.CLAUDE_DIR_ADD, link: () => toriiLink('claude'), linkLabel: T.CLAUDE_DIR_LINK, detail: T.CLAUDE_DIR_DETAIL },
     { title: T.APPROVE, detail: T.CLAUDE_DIR_APPROVE_DETAIL },
   ],
   'claude-direct': [
@@ -40,7 +44,7 @@ const STEPS = {
     { title: T.APPROVE, detail: T.CLAUDE_APPROVE_DETAIL },
   ],
   chatgpt: [
-    { title: T.CHATGPT_APP_ADD, link: () => CHATGPT_APP_URL, linkLabel: T.CHATGPT_APP_LINK, detail: T.CHATGPT_APP_DETAIL },
+    { title: T.CHATGPT_APP_ADD, link: () => toriiLink('chatgpt'), linkLabel: T.CHATGPT_APP_LINK, detail: T.CHATGPT_APP_DETAIL },
     { title: T.APPROVE, detail: T.CLAUDE_DIR_APPROVE_DETAIL },
   ],
   'chatgpt-direct': [
@@ -65,6 +69,7 @@ const VERDICTS = {
   wellknown_blocked_nested_htaccess: { title: T.V_WELLKNOWN_TITLE, summary: T.V_NESTED_SUMMARY },
   wellknown_cached_404: { title: T.V_CACHE_TITLE, summary: T.V_CACHE_SUMMARY },
   unexpected_status: { title: T.V_STATUS_TITLE, summary: T.V_STATUS_SUMMARY },
+  discovery_conflict: { title: T.V_CONFLICT_TITLE, summary: T.V_CONFLICT_SUMMARY },
 };
 
 const NEWS_URL = 'https://meowapps.com/wp-json/meowapps/v1/subscribe';
@@ -96,12 +101,13 @@ const readCachedTest = () => {
 
 const latestAuthorization = (list) => (list || []).reduce((max, a) => (a.created >= max ? a.created : max), '');
 
-const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTest, setSelfTest, hideHero = false }) => {
+const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTest, setSelfTest, hideHero = false, tokenPanel = null }) => {
   const queryClient = useQueryClient();
   const guide = getNativeMcpGuide();
   const [ app, setApp ] = useState(START.claude);
   const [ copied, setCopied ] = useState(false);
   const [ copiedSupport, setCopiedSupport ] = useState(false);
+  const [ copiedIdea, setCopiedIdea ] = useState(false);
   const [ showDetails, setShowDetails ] = useState(false);
   const [ apps, setApps ] = useState(null);
   const [ watching, setWatching ] = useState(false);
@@ -256,7 +262,7 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
       const ok = document.execCommand('copy');
       document.body.removeChild(area);
       if (!ok) {
-        return false;
+        return true;
       }
     }
     done(true);
@@ -292,13 +298,14 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
   const ok = selfTest?.verdict === 'ok';
   const blocked = selfTest && VERDICTS[selfTest.verdict];
   const unknown = selfTest && !ok && !blocked;
-  const steps = STEPS[app];
-  const tile = app === 'claude-direct' ? 'claude' : app === 'chatgpt-direct' ? 'chatgpt' : app;
+  const viaToken = app.endsWith( '-token' );
+  const steps = STEPS[app] || [];
+  const tile = app.replace( /-(direct|token)$/, '' );
   const appName = APPS.find(a => a.id === tile)?.name;
-  const connectedName = connected?.client_name && connected.client_name !== 'Unknown app' ? connected.client_name : T.YOUR_APP;
+  const connectedName = connected?.client_name && connected.client_name != 'Unknown app' ? connected.client_name : T.YOUR_APP;
 
   return (
-    <Card>
+    <Card className={hideHero ? 'bare' : undefined}>
       {!hideHero && <div className="hero">
         <span className="plug"><Plug size={18} strokeWidth={2.2} /></span>
         <div className="hero-text">
@@ -309,10 +316,10 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
 
       <div className="body">
         <div className={`health ${selfTestBusy ? 'busy' : ok ? 'ok' : blocked ? 'bad' : 'unknown'}`} role="status" aria-live="polite">
-          {selfTestBusy ? <span className="spin" /> : <span className="dot" />}
+          {selfTestBusy ? <span className="spin" /> : ok ? <span className="okmark"><Check size={16} strokeWidth={3} /></span> : <span className="dot" />}
           <span className="label">
             {selfTestBusy && T.CHECKING}
-            {!selfTestBusy && ok && T.HOST_OK}
+            {!selfTestBusy && ok && <><b>{T.HOST_OK}</b><small>{T.HOST_OK_DETAIL}</small></>}
             {!selfTestBusy && blocked && blocked.title}
             {!selfTestBusy && unknown && T.HOST_UNKNOWN}
             {!selfTestBusy && !selfTest && T.HOST_NOT_CHECKED}
@@ -364,10 +371,16 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
                 <div className="k">{T.TRY_ASKING}</div>
                 <div className="q">{T.TRY_QUESTIONS[idea % T.TRY_QUESTIONS.length]}</div>
               </div>
+              <span style={{ display: 'flex', gap: 6, flex: 'none' }}>
+              <button type="button" className="shuffle" title={T.COPY} aria-label={T.COPY}
+                onClick={() => { navigator.clipboard?.writeText(T.TRY_QUESTIONS[idea % T.TRY_QUESTIONS.length]); setCopiedIdea(true); setTimeout(() => setCopiedIdea(false), 1500); }}>
+                {copiedIdea ? <Check size={14} strokeWidth={3} /> : <Copy size={14} />}
+              </button>
               <button type="button" className="shuffle" title={T.ANOTHER_IDEA} aria-label={T.ANOTHER_IDEA}
                 onClick={() => setIdea(idea + 1)}>
                 <Shuffle size={14} />
               </button>
+              </span>
             </div>
             {newsState !== 'hidden' && (
               <div className="news">
@@ -411,9 +424,8 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
               ))}
             </div>
 
-            {START[tile] && <div className="routes" role="radiogroup" aria-label={T.ROUTE_LABEL}>
-              {[ { id: START[tile], title: T.ROUTE_DIRECT, tag: T.ROUTE_RECOMMENDED, detail: T.ROUTE_DIRECT_DETAIL },
-                { id: tile, title: T.ROUTE_CONNECTOR, detail: T.ROUTE_CONNECTOR_DETAIL } ].map( r => (
+            {ROUTES[tile] && <div className="routes" role="radiogroup" aria-label={T.ROUTE_LABEL}>
+              {ROUTES[tile].filter( r => !r.id.endsWith( '-token' ) || tokenPanel ).map( r => (
                 <button type="button" key={r.id} role="radio" aria-checked={app === r.id}
                   className={`route${app === r.id ? ' on' : ''}`} onClick={() => { reset(); setApp( r.id ); }}>
                   <b>{r.title}{r.tag && <span className="tag">{r.tag}</span>}</b>
@@ -421,14 +433,9 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
                 </button>
               ) )}
             </div>}
-            <div className="facts">
-              {FACTS[app.endsWith( '-direct' ) || !START[tile] ? 'direct' : 'connector'].map( ( [ Icon, key ] ) => (
-                <span key={key} className="fact"><Icon size={13} strokeWidth={2.2} />{T[key]}</span>
-              ) )}
-            </div>
             {app === 'chatgpt-direct' && <p className="note">{T.CHATGPT_DIRECT_NOTE}</p>}
 
-            <div className="steps">
+            {viaToken ? <div className="token">{typeof tokenPanel === 'function' ? tokenPanel( tile ) : tokenPanel}</div> : <div className="steps">
               <div className={`step ${watching ? 'done' : 'now'}`}>
                 <span className="num">{watching ? <Check size={12} strokeWidth={3} /> : '1'}</span>
                 <div className="t">{app === 'claude-code' ? T.STEP_COPY_COMMAND : viaConnector ? T.STEP_COPY_SITE : T.STEP_COPY_URL}</div>
@@ -465,15 +472,15 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
                     : <span className="muted">{timedOut ? T.TIMED_OUT : T.STEP_CONNECTED}</span>}
                 </div>
               </div>
-            </div>
+            </div>}
 
           </>
         )}
       </div>
 
-      {apps && (
+      {apps && ( !hideHero || guide ) && (
         <div className="foot">
-          <span>{apps.length === 0 ? T.NO_CONNECTION
+          <span>{hideHero ? null : apps.length === 0 ? T.NO_CONNECTION
             : sprintf(_n('%d connection', '%d connections', apps.length, 'ai-engine'), apps.length)}</span>
           {guide && <a href={guide.hub} target="_blank" rel="noreferrer">{guide.hubLabel} ↗</a>}
         </div>
@@ -496,17 +503,24 @@ const Card = Styled.div`
   .hero-text { flex: 1; min-width: 0; }
   .hero h3 { margin: 0; font-size: 15px; line-height: 1.25; color: #111827; }
   .hero p { margin: 1px 0 0; color: #4b5563; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .facts { display: flex; flex-wrap: wrap; gap: 6px; }
-  .fact { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 999px; background: #fff;
     border: 1px solid #e5eaf2; font-size: 12px; font-weight: 600; color: #1f2937; white-space: nowrap; }
-  .fact svg { color: #2b5ccf; flex: none; }
   .step .url { grid-column: 2; margin: 6px 0 2px; }
   .body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+  &.bare { border: none; border-radius: 0; overflow: visible; }
+  &.bare .body { padding: 0; gap: 14px; }
+  &.bare .foot { padding: 12px 0 0; }
+  .token { border-top: 1px solid #f1f4f9; padding-top: 4px; }
 
   .health { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; min-height: 20px; }
   .health .label { flex: 1; min-width: 0; }
   .health .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: #9ca3af; }
-  .health.ok { color: #166534; }
+  .health.ok { color: #166534; background: #ecfdf3; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 16px; gap: 12px; }
+  .health.ok .label { display: flex; flex-direction: column; gap: 2px; }
+  .health.ok .label b { font-size: 15px; font-weight: 700; }
+  .health.ok .label small { font-size: 12.5px; font-weight: 500; color: #15803d; }
+  .health.ok .okmark { width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: #16a34a; color: #fff; box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.15); }
+  .health.ok .recheck { color: #15803d; }
   .health.ok .dot { background: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16); }
   .health.bad { color: #b91c1c; }
   .health.bad .dot { background: #dc2626; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.16); }

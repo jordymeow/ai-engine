@@ -162,6 +162,12 @@ class Meow_MWAI_Core {
       // Core - Core WordPress MCP tools
       if ( $this->get_option( 'mcp_core' ) ) {
         new Meow_MWAI_Labs_MCP_Core( $this );
+        new Meow_MWAI_Labs_MCP_Site();
+        new Meow_MWAI_Labs_MCP_Seo();
+        new Meow_MWAI_Labs_MCP_Acf();
+        new Meow_MWAI_Labs_MCP_Ops();
+        new Meow_MWAI_Labs_MCP_Extras();
+        new Meow_MWAI_Labs_MCP_Shortcodes();
       }
 
       // Abilities - tools registered by plugins through the WordPress Abilities API
@@ -198,6 +204,16 @@ class Meow_MWAI_Core {
       // WPML - Pro multilingual MCP tools (only if WPML is active)
       if ( $this->get_option( 'mcp_wpml' ) && class_exists( 'MeowPro_MWAI_MCP_Wpml' ) && defined( 'ICL_SITEPRESS_VERSION' ) ) {
         new MeowPro_MWAI_MCP_Wpml( $this );
+      }
+
+      // Elementor - Pro page editing MCP tools (only if Elementor is active)
+      if ( $this->get_option( 'mcp_elementor' ) && class_exists( 'MeowPro_MWAI_MCP_Elementor' ) && defined( 'ELEMENTOR_VERSION' ) ) {
+        new MeowPro_MWAI_MCP_Elementor( $this );
+      }
+
+      // Beaver Builder - Pro page editing MCP tools (only if Beaver Builder is active)
+      if ( $this->get_option( 'mcp_beaver' ) && class_exists( 'MeowPro_MWAI_MCP_Beaver' ) && class_exists( 'FLBuilderModel' ) ) {
+        new MeowPro_MWAI_MCP_Beaver( $this );
       }
 
       // WooCommerce - Pro WooCommerce store management MCP tools (only if WooCommerce is active)
@@ -2106,6 +2122,7 @@ class Meow_MWAI_Core {
       $options = get_option( $this->option_name, [] );
       $init_mode = empty( $options );
       $stored_mcp = is_array( $options ) && isset( $options['module_mcp'] );
+      $stored_approvals = is_array( $options ) && isset( $options['mcp_approvals'] );
       foreach ( MWAI_OPTIONS as $key => $value ) {
         if ( !isset( $options[$key] ) ) {
           $options[$key] = $value;
@@ -2115,6 +2132,11 @@ class Meow_MWAI_Core {
       // never stored this key had it off: an update must never open the MCP endpoint by itself.
       if ( !$init_mode && !$stored_mcp ) {
         $options['module_mcp'] = false;
+      }
+      // Same for approvals: new installs ask before deletes, an updated site keeps running as it did
+      // (scripts on the bearer token would otherwise stop at the first delete).
+      if ( !$init_mode && !$stored_approvals ) {
+        $options['mcp_approvals'] = 'off';
       }
       $options['chatbot_defaults'] = MWAI_CHATBOT_DEFAULT_PARAMS;
       $options['default_limits'] = MWAI_LIMITS;

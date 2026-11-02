@@ -464,6 +464,7 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
     $localize_data = [
       'api_url' => get_rest_url( null, 'mwai/v1' ),
       'rest_url' => get_rest_url(),
+      'home_url' => home_url(),
       'plugin_url' => MWAI_URL,
       'user_data' => $this->core->get_user_data(),
       'prefix' => MWAI_PREFIX,
@@ -494,6 +495,36 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
         'polylang' => function_exists( 'pll_get_post_language' ),
         'wpml' => defined( 'ICL_SITEPRESS_VERSION' ),
         'woocommerce' => class_exists( 'WooCommerce' ),
+        'elementor' => defined( 'ELEMENTOR_VERSION' ),
+        'beaver' => class_exists( 'FLBuilderModel' ),
+        // Built into the WordPress tool set and switched on by themselves when the plugin is active
+        // (labs/mcp-seo.php, mcp-acf.php, mcp-extras.php, mcp-shortcodes.php): shown, never toggled.
+        'builtin' => [
+          'seo' => [
+            'Yoast SEO' => defined( 'WPSEO_VERSION' ),
+            'Rank Math' => class_exists( 'RankMath' ),
+            'All in One SEO' => function_exists( 'aioseo' ),
+            'SEOPress' => defined( 'SEOPRESS_VERSION' ),
+            'The SEO Framework' => defined( 'THE_SEO_FRAMEWORK_VERSION' ),
+            'Slim SEO' => defined( 'SLIM_SEO_VER' ) || class_exists( '\SlimSEO\Plugin' ),
+            'SEO Engine' => defined( 'MWSEO_VERSION' ),
+          ],
+          'builders' => [
+            'Divi' => defined( 'ET_BUILDER_VERSION' ) || defined( 'ET_BUILDER_PLUGIN_VERSION' ),
+            'Avada' => defined( 'FUSION_BUILDER_VERSION' ),
+            'WPBakery' => defined( 'WPB_VC_VERSION' ),
+            'SiteOrigin' => class_exists( 'SiteOrigin_Panels' ),
+          ],
+          'forms' => [
+            'Contact Form 7 + Flamingo' => class_exists( 'Flamingo_Inbound_Message' ),
+            'Fluent Forms' => defined( 'FLUENTFORM' ),
+            'Ninja Forms' => function_exists( 'Ninja_Forms' ),
+          ],
+          'other' => [
+            'ACF' => function_exists( 'acf_get_field_groups' ),
+            'Redirection' => class_exists( 'Red_Item' ),
+          ],
+        ],
         // Only when MCP is on: listing abilities runs every plugin's registration code.
         'abilities' => $this->core->get_option( 'module_mcp' ) ? Meow_MWAI_Labs_MCP_Abilities::summary() : null,
       ],

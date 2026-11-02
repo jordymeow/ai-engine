@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.8.9
+Stable tag: 3.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,76 +13,23 @@ The AI chatbot, AI agent and MCP server for WordPress. Connect OpenAI, Claude, G
 
 == Description ==
 
-**Free MCP server: Claude and ChatGPT connect with no account, no cap and no API key.**
+**The free MCP server and AI chatbot for WordPress. Claude and ChatGPT connect to your site with no account, no API key and no usage limits.**
 
-**AI Engine connects WordPress with AI models.** One install, stable connectors for every major AI provider: OpenAI, Anthropic, Google, Mistral, and more. Build intelligent chatbots, generate content, create AI forms, and automate tasks. All from your WordPress dashboard.
+**AI Engine connects WordPress and AI, both ways.** AI comes into your site: chatbots that know your content, writing, images, forms and search, with OpenAI, Anthropic, Google, Mistral and more. And your site goes into AI: Claude, ChatGPT and other agents can read and edit it through MCP, safely and with your approval.
+
+🤖 **A chatbot that knows your site.** Add it in a few clicks, with five themes, voice, file uploads, conversation memory and your own knowledge base. Here is [how to add an AI chatbot to WordPress](https://meowapps.com/add-ai-chatbot-wordpress/).
+
+🔌 **Your site, inside Claude and ChatGPT.** More than 140 tools to write posts block by block, edit page builders, fill in SEO fields, manage WooCommerce and much more. Every change can be undone in one click, and deletions wait for your approval. Connect [ChatGPT](https://meowapps.com/chatgpt-wordpress-mcp/) or [Claude](https://meowapps.com/claude-code-wordpress-mcp/) in a minute.
+
+🖥️ **Workspace, in your admin and on your phone.** A full-screen AI chat with every model you set up, which can also work on your site, with [free apps for iPhone and Android](https://meowapps.com/workspace-app-ios-android/).
 
 https://www.youtube.com/watch?v=CBsXit0W4Ro
 
-Take the tour at [vibewithwp.ai](https://vibewithwp.ai/): what AI Engine does, how the MCP server works, and how it compares to the alternatives. Please make sure you read the [disclaimer](https://meowapps.com/ai-engine/disclaimer/). For more information, check the official website of [AI Engine](https://meowapps.com/ai-engine/).
-
-== Quick Intro ==
-
-Hello! ☀️ I built AI Engine to bring OpenAI, Anthropic, and other AI models into WordPress. Create chatbots that understand your content, generate posts in your voice, translate instantly, create images, or build custom AI tools.
-
-For developers: [internal APIs](https://ai.thehiddendocs.com/php-functions/), [REST endpoints](https://ai.thehiddendocs.com/public-rest-api/), [function calling](https://ai.thehiddendocs.com/function-calling/), and [MCP support](https://ai.thehiddendocs.com/mcp/). Build AI features, automate workflows, or create SaaS applications on WordPress.
-
-There is also a Workspace: a full-screen AI chat inside wp-admin, with every model you configured, and free apps for [iPhone](https://apps.apple.com/app/workspace-for-wordpress/id6794717714) and [Android](https://play.google.com/store/apps/details?id=com.meowapps.workspace) so you can keep working on your site from your phone. Details on [workspace.press](https://workspace.press/).
-
-Feeling overwhelmed? 🤪 Start simple: Create a chatbot. Then connect [Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/), [Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/), [ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/), or [OpenClaw](https://meowapps.com/openclaw-wordpress-mcp/) through MCP, giving AI direct access to your site. Desktop clients can connect via OAuth: users just paste the MCP URL, sign in to WordPress, and approve. No shared token to manage. Add [SEO Engine](https://wordpress.org/plugins/seo-engine/) and watch it manage SEO in ways you never imagined. You can even connect AI Engine to multiple WordPress sites and manage them all through conversation.
-
-https://www.youtube.com/watch?v=qg75Y3PDBpc
-
-You'll be having a blast before you've explored everything. You'll probably spot bits of AI Engine in plenty of other AI plugins, code and UI alike. Flattering, really... or fishy? 🤣 But only AI Engine keeps pushing forward with real care for its community, a drive toward perfection, and the patience to get the details right.
-
-== Core Modules ==
-
-🤖 **Chatbots**
-Create chatbots for your visitors, with five built-in themes (including the new Glass), realtime audio, file uploads, discussions, and conversation memory. Every theme can be restyled, and every text the chatbot says can be translated.
-
-🖥️ **Workspace** (with free [iPhone](https://apps.apple.com/app/workspace-for-wordpress/id6794717714) and [Android](https://play.google.com/store/apps/details?id=com.meowapps.workspace) apps)
-A full-screen AI chat inside your WordPress admin: every model you configured, conversation history and folders, a prompt library, image generation, web search, and hands-on access to your site through the MCP tools. It also runs on your phone and tablet, through [Workspace for WordPress](https://workspace.press/).
-
-🎨 **Content & Media**
-Write posts in the Content Studio, create and edit images in the Image Studio, compare models side by side in the Playground, and use Copilot in the WordPress editor to correct, enhance, translate, or rewrite text.
-
-📝 **AI Forms**
-Build custom AI-powered forms that handle text, images, audio, or file uploads. Create advanced apps with conditional logic.
-
-🧠 **Knowledge & Embeddings**
-Create embeddings and build knowledge bases from PDFs. Connect with Pinecone, Chroma, Qdrant, or OpenAI Vector Store for semantic search.
-
-🔧 **Function Calling**
-Connect AI to WordPress functions, WooCommerce, appointments, or custom APIs. Let AI interact with your site's data and services in real-time.
-
-🛡️ **Security & Moderation**
-IP banning, word filtering, and content moderation to keep your AI interactions safe.
-
-💡 **Advisor**
-AI-powered recommendations and insights to help you set up and optimize your WordPress site.
-
-🔌 **Developer Tools**
-Internal APIs, REST endpoints, MCP support, and extensive hooks. Build AI-driven features, automate workflows, or create SaaS applications.
-
-== 🖥️ Workspace (and its mobile apps) ==
-
-A full-screen AI chat that lives in your WordPress admin, and now in your pocket too.
-
-Every model you configured is one tap away, in the same conversation: start a thread on Claude, continue it on ChatGPT or Gemini, generate an image, search the web, then let it work on the site itself through the MCP tools, with an approval dialog before anything is changed.
-
-**Workspace for WordPress** brings all of it to your phone and tablet, on the [App Store](https://apps.apple.com/app/workspace-for-wordpress/id6794717714) and [Google Play](https://play.google.com/store/apps/details?id=com.meowapps.workspace). You scan a QR code once to pair it with your site, no password typed on a phone keyboard, and the pairing is a revocable Application Password you can cut off at any time. Your conversations, folders and themes stay on your own site, and your API keys never leave it.
-
-The app is free, the plugin is free, and there is no markup on anything: you pay your AI providers directly, at their price. Workspace is off by default: enable it under AI Engine → Settings → Modules, and the Workspace entry appears in your admin menu. More about it on [workspace.press](https://workspace.press/).
-
-**Features:**
-
-* History, folders, pins, full-text search and a prompt library
-* Attach files and save generated images to the Media Library
-* Requires iOS 17 or newer, or Android 8 or newer
+New here? Start with the [AI Engine tutorial](https://meowapps.com/ai-engine/tutorial/), or visit the [AI Engine website](https://meowapps.com/ai-engine/). Please also read the [disclaimer](https://meowapps.com/ai-engine/disclaimer/).
 
 == 🤖 Chatbots ==
 
-Transform visitor interactions with intelligent, customizable chatbots.
+Chatbots for your visitors that answer from your own content, in your colors and your language. [Add one in a few minutes](https://meowapps.com/add-ai-chatbot-wordpress/).
 
 **Features:**
 
@@ -94,112 +41,45 @@ Transform visitor interactions with intelligent, customizable chatbots.
 * Discussions list and conversation memory
 * Every text translatable, and message actions reachable with the keyboard
 * Cross-site embedding
+* IP banning, word filters and content moderation
 * GDPR compliance tools
-
-== 🎨 Content & Media ==
-
-Create, refine, and visualize content with AI assistance.
-
-**Studios:**
-
-* Content Studio: from a brief to a full draft, with templates you can reuse
-* Image Studio: generate images, keep every version, and edit them with a brush
-* Playground: try a prompt on several models side by side
-
-**Copilot (Magic Wand):**
-
-* Correct grammar and spelling
-* Enhance text for readability and quality
-* Make text longer or shorter
-* Translate text and full posts
-* Generate content from scratch
-* Multi-block support in the WordPress editor
-
-**Image Tools:**
-
-* Create images from text prompts
-* Edit existing images with AI
-* Vision AI for image analysis
-* Automatic alt text generation
-
-== 📝 AI Forms ==
-
-Build powerful AI-driven forms and applications.
-
-**Capabilities:**
-
-* Text, image, audio, and file inputs
-* Conditional logic and validation
-* Custom AI-powered apps
-* Multi-step workflows
-* Result templates
-
-== 🧠 Knowledge & Embeddings ==
-
-Create intelligent knowledge bases and semantic search.
-
-**Vector Databases:**
-
-* Chroma, Qdrant, Pinecone
-* OpenAI Vector Store
-* Automatic synchronization
-* Dimension validation
-
-**Smart Features:**
-
-* PDF import with auto-chunking
-* AI-powered search (Simple, Context-Aware, Smart)
-* Content classification
-* Personalized recommendations
-
-== 🔧 Developer Tools ==
-
-Extend WordPress with AI capabilities.
-
-**APIs:**
-
-* Internal API for plugin integration
-* REST API for external applications
-* MCP (Model Context Protocol) support
-* Function calling framework
-
-**Integration:**
-
-* Works with SEO Engine, Social Engine, Code Engine
-* Media File Renamer support
-* Custom shortcodes and hooks
-* Extensive WordPress filters
-
-**Resources:**
-
-* [Code Examples & Customization](https://ai.thehiddendocs.com/examples/)
 
 == MCP (Model Context Protocol) ==
 
+https://www.youtube.com/watch?v=qg75Y3PDBpc
+
 AI Engine turns your WordPress site into an intelligent MCP server. AI agents like ChatGPT, Claude, Claude Code, and OpenClaw can connect directly, browse content, edit posts, manage media, and handle complex tasks through natural conversation.
 
-**More than 130 tools, over 200 with the Meow Apps family.** Posts, pages, media, comments, users, taxonomies, block patterns, editor notes, image generation and vision come free. Pro adds plugins, themes, database, WooCommerce, Polylang and WPML. SEO Engine, Code Engine and Social Engine plug in their own, and any WordPress Ability can join. You choose which sets are on, so each AI only carries what it needs.
+**More than 140 tools, over 200 with the Meow Apps family.** Posts and pages (edited block by block), media, comments, users, taxonomies, menus, CSS and site styles, SEO fields in the SEO plugin you already use, Advanced Custom Fields, block patterns, editor notes, image generation and vision come free. Pro adds plugins, themes, database, Elementor, Beaver Builder, WooCommerce, Polylang and WPML. SEO Engine, Code Engine and Social Engine plug in their own, and any WordPress Ability can join. You choose which sets are on, so each AI only carries what it needs.
 
 **Direct and private.** AI apps connect straight to your site. There is no relay service in between, your credentials never leave WordPress, and the MCP server is free, with no monthly fee and no usage cap.
 
-**See and undo every change.** The MCP tab lists what each assistant changed on your site, with a link to WordPress's before/after view and a one-click way back to the version before the edit.
+**Undo anything it did.** Every change an assistant makes is recorded with what it replaced: posts, blocks, fields, categories, menus, styles, settings, Elementor pages, plugins and products. Undo it with one click in the MCP tab, or just ask: "undo what you just did". If someone edited the same thing since, the undo stops instead of erasing their work. The full history is kept 30 days.
+
+**It asks before deleting.** New sites ask you before an assistant deletes anything (or, if you prefer, before any site change too): you approve it in one click in the MCP tab. Or keep assistants on drafts only, and publish yourself.
 
 Rather have it set up for you? [Connect with Meow Apps](https://connect.meowapps.com/?ref=wporg) adds your site to ChatGPT or Claude in a few clicks, through our gateway, which passes requests along without storing them.
 
 **What AI Agents Can Do:**
 
-* Create and edit posts
-* Moderate comments
+* Create and edit posts, one block at a time
+* Edit pages built with Elementor, Beaver Builder, Divi, Avada, WPBakery or SiteOrigin
+* Manage menus, CSS, site styles, and block theme headers, footers and templates
+* Write SEO titles and descriptions in Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework or Slim SEO
+* Fill in Advanced Custom Fields (ACF)
+* Check pages as visitors see them, read the error log, and restore earlier versions
+* Undo any change, by asking or with one click
+* Moderate comments, share draft previews, manage redirects, and read form entries
 * Install and manage plugins
 * Customize themes
 * Check SEO and analytics
 * Manage media files
 * Run SQL queries
 * Create images for your posts, in the shape you need
-* Manage WooCommerce products, orders, inventory, and customers
+* Manage WooCommerce products, variations, coupons, orders, inventory, and customers
 * Handle Polylang and WPML translations
 
-Setup guides for [ChatGPT](https://ai.thehiddendocs.com/mcp/mcp-server-chatgpt/), [Claude](https://ai.thehiddendocs.com/mcp/mcp-server-claude/) and [Claude Code](https://ai.thehiddendocs.com/mcp/mcp-server-claude-code/) are in the [MCP documentation](https://ai.thehiddendocs.com/mcp/).
+Step-by-step guides: [ChatGPT](https://meowapps.com/chatgpt-wordpress-mcp/), [Claude and Claude Code](https://meowapps.com/claude-code-wordpress-mcp/), [OpenClaw](https://meowapps.com/openclaw-wordpress-mcp/), and the [WordPress MCP FAQ](https://meowapps.com/wordpress-mcp-faq/). Developers will find every tool in the [MCP documentation](https://ai.thehiddendocs.com/mcp/).
 
 AI Engine can also connect to external MCP servers, extending your chatbots with tools and services beyond WordPress.
 
@@ -210,6 +90,26 @@ AI Engine's MCP tools are curated and permission-aware on purpose. They do not r
 Each person connects with their own WordPress account, so every action shows up under their name. Administrators get full access. Editors can connect too once you turn on Editor Access, limited to the content they can already edit in WordPress: settings, users, plugins, themes and deleting stay with administrators.
 
 Arbitrary PHP execution, as some tools offer, will never be part of AI Engine: it turns your site into remote code execution. For a development site only, the companion [AI Engine YOLO](https://github.com/jordymeow/ai-engine-yolo) adds it, switches itself off on production, and lives on GitHub only.
+
+== 🖥️ Workspace (and its mobile apps) ==
+
+A full-screen AI chat in your WordPress admin. Every model you configured is in the same conversation: start on Claude, continue on ChatGPT or Gemini, generate an image, search the web, and let it work on your site through the MCP tools, with an approval before anything changes. History, folders, a prompt library and file attachments are included. The free **Workspace for WordPress** app brings it to your phone and tablet ([App Store](https://apps.apple.com/app/workspace-for-wordpress/id6794717714), iOS 17 or newer, and [Google Play](https://play.google.com/store/apps/details?id=com.meowapps.workspace), Android 8 or newer): you pair it once with a QR code, and your conversations and API keys stay on your site. There is no markup: you pay your AI providers directly. Workspace is off by default: turn it on in AI Engine → Settings → Modules. [More about Workspace](https://meowapps.com/workspace-app-ios-android/).
+
+== 🎨 Content & Media ==
+
+Write posts in the Content Studio, from a brief to a full draft, with templates you can reuse. Create images in the Image Studio, keep every version, and edit them with a brush. Compare models side by side in the Playground. In the editor, Copilot corrects, enhances, shortens, lengthens and translates text, writes alt text and analyzes images. The Advisor suggests how to set up and improve your site.
+
+== 📝 AI Forms ==
+
+AI-powered forms and small apps that take text, images, audio or files, with conditional logic, multiple steps and result templates.
+
+== 🧠 Knowledge & Embeddings ==
+
+Turn your posts and PDFs into a knowledge base for your chatbots, with semantic search through Pinecone, Chroma, Qdrant or OpenAI Vector Store. Posts stay in sync automatically, PDFs are split into chunks for you, and your site search can use it too.
+
+== 🔧 Developer Tools ==
+
+A [PHP API](https://ai.thehiddendocs.com/php-functions/), a [REST API](https://ai.thehiddendocs.com/public-rest-api/), [function calling](https://ai.thehiddendocs.com/function-calling/) to connect AI to WordPress functions, WooCommerce or any API, the MCP server, and many hooks and filters. Build AI features, automate workflows, or create SaaS applications on WordPress. AI Engine also works with SEO Engine, Social Engine, Code Engine and Media File Renamer. See the [code examples](https://ai.thehiddendocs.com/examples/).
 
 == Pro Features ==
 
@@ -245,6 +145,9 @@ IP hashing, GDPR tools, secure file handling, and session-based tracking. You co
 **Constantly Evolving**
 Weekly updates based on real user feedback. We listen, we improve.
 
+**The Original**
+You'll probably spot bits of AI Engine in plenty of other AI plugins, code and UI alike. Flattering, really... or fishy? 🤣 But only AI Engine keeps pushing forward with real care for its community, a drive toward perfection, and the patience to get the details right.
+
 == My Dream for AI ==
 
 I am excited about AI, but I believe we need to use it with intention and clarity. Social media showed us how powerful tools can reshape our lives in ways we never expected, sometimes for the better, sometimes not. I want to avoid repeating those mistakes. AI should help us remove the meaningless, tedious work or enhance the work we enjoy. Modern tools should give us more time for what truly matters: spending beautiful moments with the people we love! 💕
@@ -275,13 +178,15 @@ Please be aware that there may be conflicts with certain caching or performance 
 
 == Screenshots ==
 
-1. A chatbot on your site, here as a popup in the corner of a page. Give it a name, an avatar and a personality.
-2. The same chatbot inline, with a dark theme. Themes are built in, and you can style your own.
-3. Realtime: a voice conversation with the AI, with avatars and the live events feed.
-4. Building a chatbot in the settings: pick the environment, the model, the context and the functions, and try it right there in the live preview.
-5. The Content Generator: a whole post from a topic, sections first, then the content and the excerpt, all editable before it is published.
-6. The Workspace: a full-screen AI chat inside wp-admin that can read and manage your site, with every model you configured.
-7. Workspace on your phone: your site's AI on iPhone or Android. Every model, your keys, your site, with conversations kept on your own WordPress and image generation included.
+1. A chatbot on your own site, here on Offbeat Japan. It answers from your content, with any model you like, and you give it a name, a face and a style.
+2. Claude working on a WordPress site through AI Engine: it reads the latest posts, then saves a new draft. AI Engine is a free MCP server for Claude, ChatGPT and any AI app, with no daily cap and no account.
+3. Connect Claude, ChatGPT, Claude Code or any other AI app in a minute. AI Engine checks your host first, and the connection goes straight to your site.
+4. Build a chatbot: pick the model, give it your content and tools, and try it right there in the live preview.
+5. The dashboard: your models, what your AI assistants changed, this week's queries and what they cost, and which AI bots visit your site.
+6. Knowledge: your posts become what the chatbot knows, kept in sync as you write. Ask a question and see which content it would use.
+7. Insights: every AI call with its real cost, and spending limits for users, guests and the whole site.
+8. The Workspace: a full-screen AI chat inside wp-admin that reads your site and helps you run it, with every model you set up.
+9. Workspace on your phone: your site's AI on iPhone or Android. Every model, your keys, your site, with conversations kept on your own WordPress and image generation included.
 
 == Frequently Asked Questions ==
 
@@ -307,11 +212,11 @@ Yes. The MCP server is part of this free plugin, with no account and no daily ca
 
 = Does AI Engine work with WordPress AI (the AI plugin, Connectors and providers)? =
 
-Yes, but you don't need it. AI Engine already does everything WordPress AI offers, and more: it connects to every major provider, and adds chatbots, AI Forms, embeddings, a dedicated MCP server with more than 130 tools, and usage insights. That's why we don't recommend installing the WordPress AI plugin alongside it. If you already use it, that's fine: we make sure both play nicely together. On the Connectors page, choose to let AI Engine manage your providers: the API keys you already saved there are reused, both screens stay in sync, and the AI features of WordPress run through AI Engine, so their usage shows up in its Insights.
+Yes, but you don't need it. AI Engine already does everything WordPress AI offers, and more: it connects to every major provider, and adds chatbots, AI Forms, embeddings, a dedicated MCP server with more than 140 tools, and usage insights. That's why we don't recommend installing the WordPress AI plugin alongside it. If you already use it, that's fine: we make sure both play nicely together. On the Connectors page, choose to let AI Engine manage your providers: the API keys you already saved there are reused, both screens stay in sync, and the AI features of WordPress run through AI Engine, so their usage shows up in its Insights.
 
 = Do I need the MCP Adapter plugin? =
 
-No. AI Engine has its own MCP server, with more than 130 tools (over 200 with SEO Engine, Code Engine and Social Engine), OAuth for Claude and ChatGPT, and per-user access, so there is nothing else to install. The MCP Adapter is the official WordPress bridge that turns the abilities other plugins register into MCP tools. Think of it as a power socket, and AI Engine as the appliance. If you already run it, both live side by side on different endpoints, and the Abilities option in the MCP tab lets AI Engine's own server expose those abilities too.
+No. AI Engine has its own MCP server, with more than 140 tools (over 200 with SEO Engine, Code Engine and Social Engine), OAuth for Claude and ChatGPT, and per-user access, so there is nothing else to install. The MCP Adapter is the official WordPress bridge that turns the abilities other plugins register into MCP tools. Think of it as a power socket, and AI Engine as the appliance. If you already run it, both live side by side on different endpoints, and the Abilities option in the MCP tab lets AI Engine's own server expose those abilities too.
 
 = Can I restrict the chatbot to answer only from my site content? =
 
@@ -330,6 +235,25 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.9.0 (2026/11/02) =
+* Fix: Security: Image Studio now encodes the media ID in its requests, as extra hardening.
+* Add: MCP Undo: every change an assistant makes can be undone in one click from the MCP tab, or just by asking, and the undo stops if someone edited the item since.
+* Add: MCP approvals: approve deletions (or every site change) from the MCP tab, or keep assistants on drafts only.
+* Add: MCP edits Gutenberg posts block by block, and turns Markdown into real blocks.
+* Add: MCP works with your SEO plugin (Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework, Slim SEO, SEO Engine) and with Advanced Custom Fields.
+* Add: MCP edits pages built with Elementor and Beaver Builder, Divi, Avada, WPBakery and SiteOrigin.
+* Add: MCP manages menus, CSS, site styles, block theme templates, classic widgets, WooCommerce coupons and variations, comments, draft previews and Redirection redirects, and reads form entries.
+* Add: MCP checks pages as visitors see them, reads the error log and Site Health, and restores revisions.
+* Add: Assistants get a short introduction to the site and starter prompts when they connect.
+* Add: Auto Sync can target several embeddings environments, with the mwai_embeddings_sync_env_ids filter.
+* Add: The chatbot launcher can reuse the AI avatar.
+* Update: Redesigned MCP tab: the token setup lives in Connect, integrations show as chips, activity covers 30 days, and the Claude and ChatGPT directory links go through Meow Apps' connector.
+* Update: MCP tools that can break things are flagged so assistants ask before running them, and tool descriptions are shorter.
+* Update: Turning on Cross-Site for a chatbot also turns on Popup.
+* Fix: Trashing a post now deletes its vectors through each environment's own vector DB.
+* Fix: On mobile, the Glass and Timeless chatbots keep the input above the keyboard in long conversations.
+* Fix: A page that places the site-wide chatbot as a popup no longer shows it twice.
 
 = 3.8.9 (2026/10/30) =
 * Add: GPT-6.1 Terra model.

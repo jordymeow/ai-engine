@@ -1240,6 +1240,11 @@ class Meow_MWAI_Modules_Chatbot {
   }
 
   public function inject_chat() {
+    // The page already placed this same chatbot as a popup: injecting it again stacked two identical
+    // launchers (same element id) on the same corner. Different chatbots are left to the warning below.
+    if ( in_array( "id={$this->siteWideChatId}", $this->renderedPopups, true ) ) {
+      return null;
+    }
     $params = $this->core->get_chatbot( $this->siteWideChatId );
     $clean_params = [];
     if ( !empty( $params ) ) {

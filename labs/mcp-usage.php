@@ -34,7 +34,8 @@ class Meow_MWAI_Labs_MCP_Usage {
     }
     $from = gmdate( 'Y-m-d 00:00:00', time() - self::KEEP_DAYS * DAY_IN_SECONDS );
     $rows = $wpdb->get_results( $wpdb->prepare(
-      "SELECT DATE(time) AS day, scope, stats FROM $table WHERE feature = 'mcp_tool' AND time >= %s", $from
+      "SELECT DATE(time) AS day, scope, stats FROM $table WHERE feature = 'mcp_tool' AND time >= %s",
+      $from
     ), ARRAY_A );
     if ( empty( $rows ) ) {
       return;
@@ -53,11 +54,7 @@ class Meow_MWAI_Labs_MCP_Usage {
       }
       $day = $row['day'];
       $entry = $built[ $day ] ?? [ 'c' => 0, 'e' => 0, 'w' => 0, 't' => [], 'a' => [] ];
-      // A call that changed nothing (the same featured image set again) is not a change.
-    if ( $writes && stripos( (string) wp_json_encode( $event['result'] ?? '' ), 'already set' ) !== false ) {
-      $writes = false;
-    }
-    $entry['c']++;
+      $entry['c']++;
       if ( ( $stats['status'] ?? 'success' ) !== 'success' ) {
         $entry['e']++;
       }
@@ -101,7 +98,17 @@ class Meow_MWAI_Labs_MCP_Usage {
     // 'writes' comes from labs/mcp.php; events from older code only carry the access level.
     $writes = isset( $event['writes'] ) ? (bool) $event['writes']
       : ( !empty( $event['access_level'] ) && $event['access_level'] !== 'read' );
+    // A call that changed nothing (the same featured image set again) is not a change.
+    if ( $writes && stripos( (string) wp_json_encode( $event['result'] ?? '' ), 'already set' ) !== false ) {
+      $writes = false;
+    }
     $entry['c']++;
+    // Waiting for the owner's approval is neither a failure nor a change.
+    if ( $status === 'pending_approval' ) {
+      $usage[ $day ] = $entry;
+      update_option( self::OPTION, $usage, false );
+      return;
+    }
     if ( $status !== 'success' ) {
       $entry['e']++;
     }
@@ -122,13 +129,13 @@ class Meow_MWAI_Labs_MCP_Usage {
     update_option( self::OPTION, $usage, false );
 
     if ( $status === 'success' && $writes ) {
-      $this->remember_change( $tool, $client, is_array( $event['args'] ?? null ) ? $event['args'] : [] );
+      $this->remember_change( $tool, $client, is_array( $event['args'] ?? null ) ? $event['args'] : [], array_map( 'intval', (array) ( $event['change_ids'] ?? [] ) ) );
     }
   }
 
   // OAuth apps name themselves. A token call has no name, but developer tools say who they are
   // in their user agent: "Claude Code (token)" tells more than a key. The tab reads the suffix.
-  private static function client_of( array $event ): string {
+  public static function client_of( array $event ): string {
     if ( !empty( $event['client_name'] ) ) {
       return (string) $event['client_name'];
     }
@@ -147,9 +154,15 @@ class Meow_MWAI_Labs_MCP_Usage {
 
   // The last changes an assistant made, so the MCP tab can say what happened and link to it.
   // Only the tool, who, when and which post: never the content or the arguments.
-  private function remember_change( string $tool, string $client, array $args ) {
+  private function remember_change( string $tool, string $client, array $args, array $changeIds = [] ) {
+    // An undo names the change it reverted, not a post: show what that change was about.
+    if ( $tool === Meow_MWAI_Labs_MCP_Undo::UNDO_TOOL ) {
+      $undone = $changeIds ? Meow_MWAI_Labs_MCP_Undo::get( $changeIds[0] ) : null;
+      $args = $undone && is_numeric( $undone['object_id'] ) && in_array( $undone['object_type'], [ 'post', 'meta', 'post_terms', 'elementor', 'wc_product' ], true )
+        ? [ 'ID' => (int) $undone['object_id'] ] : [ 'title' => $undone['title'] ?? '' ];
+    }
     $id = 0;
-    foreach ( [ 'ID', 'id', 'post_id', 'postId', 'attachment_id', 'comment_id' ] as $key ) {
+    foreach ( [ 'ID', 'id', 'post_id', 'postId', 'product_id', 'attachment_id', 'comment_id' ] as $key ) {
       if ( !empty( $args[ $key ] ) && is_numeric( $args[ $key ] ) ) {
         $id = (int) $args[ $key ];
         break;
@@ -184,6 +197,7 @@ class Meow_MWAI_Labs_MCP_Usage {
     if ( $last && self::same_change( $last, $tool, $client, $id, $title ) && !empty( $last['removed'] ) === $removed && time() - (int) $last['time'] < 15 * MINUTE_IN_SECONDS ) {
       $recent[0]['time'] = time();
       $recent[0]['count'] = (int) ( $last['count'] ?? 1 ) + 1;
+      $recent[0]['changes'] = array_slice( array_merge( (array) ( $last['changes'] ?? [] ), $changeIds ), -50 );
       update_option( self::RECENT_OPTION, $recent, false );
       return;
     }
@@ -196,6 +210,8 @@ class Meow_MWAI_Labs_MCP_Usage {
       'taxonomy' => isset( $args['taxonomy'] ) ? sanitize_key( (string) $args['taxonomy'] ) : '',
       // Taking terms off (or clearing them) must not read as "Tagged".
       'removed' => $removed,
+      // Journal rows (labs/mcp-undo.php), so the tab can undo the whole row.
+      'changes' => $changeIds,
     ] );
     update_option( self::RECENT_OPTION, array_slice( $recent, 0, self::RECENT_MAX ), false );
   }
@@ -207,14 +223,16 @@ class Meow_MWAI_Labs_MCP_Usage {
   // Nothing is offered once the post was edited again afterwards.
   private static function revision_links( WP_Post $post, string $tool, int $time ): array {
     $none = [ 'diff' => null, 'restore' => null ];
-    if ( !preg_match( '/^(wp_update_post|wp_alter_post|wp_write_blocks|wc_update_product|wc_alter_product)$/', $tool ) ) {
+    if ( !preg_match( '/^(wp_update_post|wp_alter_post|wp_write_blocks|wp_edit_blocks|wc_update_product|wc_alter_product)$/', $tool ) ) {
       return $none;
     }
     if ( !post_type_supports( $post->post_type, 'revisions' ) ) {
       return $none;
     }
-    $revisions = array_values( array_filter( wp_get_post_revisions( $post->ID, [ 'numberposts' => 5 ] ),
-      function ( $revision ) { return !wp_is_post_autosave( $revision ); } ) );
+    $revisions = array_values( array_filter(
+      wp_get_post_revisions( $post->ID, [ 'numberposts' => 5 ] ),
+      function ( $revision ) { return !wp_is_post_autosave( $revision ); }
+    ) );
     $latest = $revisions[0] ?? null;
     if ( !$latest || abs( strtotime( $latest->post_date_gmt . ' UTC' ) - $time ) > 5 * MINUTE_IN_SECONDS ) {
       return $none;
@@ -250,6 +268,7 @@ class Meow_MWAI_Labs_MCP_Usage {
         'editUrl' => $post ? get_edit_post_link( $id, 'raw' ) : null,
         'diffUrl' => $links['diff'],
         'restoreUrl' => $links['restore'],
+        'changeIds' => array_map( 'intval', (array) ( $item['changes'] ?? [] ) ),
         'thumb' => $post ? ( get_the_post_thumbnail_url( $id, 'thumbnail' ) ?: ( $post->post_type === 'attachment' && wp_attachment_is_image( $id ) ? wp_get_attachment_image_url( $id, 'thumbnail' ) : null ) ) : null,
       ];
       // Rows from before the merge above: fold consecutive repeats here too.
@@ -258,10 +277,21 @@ class Meow_MWAI_Labs_MCP_Usage {
         && $out[ $prev ]['title'] === $row['title'] && $out[ $prev ]['editUrl'] === $row['editUrl'] && $out[ $prev ]['removed'] === $row['removed']
         && $out[ $prev ]['time'] - $row['time'] < 15 * MINUTE_IN_SECONDS ) {
         $out[ $prev ]['count'] += $row['count'];
+        $out[ $prev ]['changeIds'] = array_merge( $out[ $prev ]['changeIds'], $row['changeIds'] );
         continue;
       }
       $out[] = $row;
     }
+    // Whether the row can be undone now; Undo replaces WordPress's Restore when it can.
+    foreach ( $out as &$row ) {
+      $group = Meow_MWAI_Labs_MCP_Undo::group_status( $row['changeIds'] );
+      $row['undo'] = $group['status'] ?? null;
+      $row['undoNote'] = $group['note'] ?? '';
+      if ( $row['undo'] ) {
+        $row['restoreUrl'] = null;
+      }
+    }
+    unset( $row );
     return $out;
   }
 
@@ -277,7 +307,7 @@ class Meow_MWAI_Labs_MCP_Usage {
     for ( $i = $days - 1; $i >= 0; $i-- ) {
       $date = gmdate( 'Y-m-d', time() - $i * DAY_IN_SECONDS );
       $entry = $usage[ $date ] ?? null;
-      $perDay[] = [ 'date' => $date, 'calls' => (int) ( $entry['c'] ?? 0 ) ];
+      $perDay[] = [ 'date' => $date, 'calls' => (int) ( $entry['c'] ?? 0 ), 'errors' => (int) ( $entry['e'] ?? 0 ) ];
       if ( !$entry ) {
         continue;
       }

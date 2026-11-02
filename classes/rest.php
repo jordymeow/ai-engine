@@ -269,6 +269,21 @@ class Meow_MWAI_Rest {
         'permission_callback' => [ $this->core, 'can_access_settings' ],
         'callback' => [ $this, 'rest_mcp_usage' ],
       ] );
+      register_rest_route( $this->namespace, '/mcp/changes', [
+        'methods' => 'GET',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_mcp_changes' ],
+      ] );
+      register_rest_route( $this->namespace, '/mcp/approvals', [
+        'methods' => [ 'GET', 'POST' ],
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_mcp_approvals' ],
+      ] );
+      register_rest_route( $this->namespace, '/mcp/undo', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_mcp_undo' ],
+      ] );
       // Public on purpose: the self-test calls it without cookies to see whether the host passes
       // the Authorization header on. It only answers two booleans for a one-time token.
       register_rest_route( $this->namespace, '/mcp/auth_echo', [
@@ -2124,8 +2139,44 @@ class Meow_MWAI_Rest {
 
   public function rest_mcp_usage( $request ) {
     require_once MWAI_PATH . '/labs/mcp-usage.php';
+    require_once MWAI_PATH . '/labs/mcp-undo.php';
     $days = (int) ( $request->get_param( 'days' ) ?: 7 );
     return $this->create_rest_response( [ 'success' => true, 'usage' => Meow_MWAI_Labs_MCP_Usage::summary( $days ), 'recent' => Meow_MWAI_Labs_MCP_Usage::recent() ], 200 );
+  }
+
+  public function rest_mcp_changes( $request ) {
+    require_once MWAI_PATH . '/labs/mcp-undo.php';
+    $changes = Meow_MWAI_Labs_MCP_Undo::changes( [
+      'limit' => (int) ( $request->get_param( 'limit' ) ?: 100 ),
+      'client' => sanitize_text_field( (string) $request->get_param( 'client' ) ),
+      'tool' => sanitize_text_field( (string) $request->get_param( 'tool' ) ),
+    ] );
+    return $this->create_rest_response( [ 'success' => true, 'changes' => $changes, 'keepDays' => Meow_MWAI_Labs_MCP_Undo::KEEP_DAYS ], 200 );
+  }
+
+  // Requests waiting for the owner (labs/mcp-approvals.php). POST { key, approve } decides one.
+  public function rest_mcp_approvals( $request ) {
+    if ( $request->get_method() === 'POST' ) {
+      $params = $request->get_json_params();
+      $done = Meow_MWAI_Labs_MCP_Approvals::decide( sanitize_key( (string) ( $params['key'] ?? '' ) ), !empty( $params['approve'] ) );
+      if ( !$done ) {
+        return $this->create_rest_response( [ 'success' => false, 'message' => __( 'This request has expired or was already decided.', 'ai-engine' ) ], 200 );
+      }
+    }
+    return $this->create_rest_response( [ 'success' => true, 'pending' => Meow_MWAI_Labs_MCP_Approvals::pending() ], 200 );
+  }
+
+  // From the MCP tab: one row may group several changes; "force" (Undo anyway) only from History.
+  public function rest_mcp_undo( $request ) {
+    require_once MWAI_PATH . '/labs/mcp-undo.php';
+    $params = $request->get_json_params();
+    $ids = array_map( 'intval', (array) ( $params['ids'] ?? [] ) );
+    if ( !$ids ) {
+      return $this->create_rest_response( [ 'success' => false, 'message' => 'No change to undo.' ], 400 );
+    }
+    $user = wp_get_current_user();
+    $result = Meow_MWAI_Labs_MCP_Undo::undo( $ids, !empty( $params['force'] ), [ 'user_id' => $user->ID, 'client' => '' ] );
+    return $this->create_rest_response( $result, 200 );
   }
 
   /**
@@ -2157,6 +2208,53 @@ class Meow_MWAI_Rest {
       'native' => hash_equals( $expected, $native ),
       'fallback' => hash_equals( $expected, $any ),
     ], 200 );
+  }
+
+  /**
+   * Whether the host-root OAuth discovery URLs belong to someone else. Returns the first
+   * foreign answer (url, issuer, plugin name when it can be guessed) or null.
+   */
+  private function mcp_discovery_conflict( array $args ): ?array {
+    $ours = untrailingslashit( rest_url( 'mcp/v1' ) );
+    $checks = [
+      '/.well-known/oauth-authorization-server' => 'issuer',
+      '/.well-known/oauth-protected-resource' => 'authorization_servers',
+    ];
+    foreach ( $checks as $path => $key ) {
+      $url = home_url( $path );
+      $response = wp_remote_get( $url, $args );
+      if ( is_wp_error( $response ) || (int) wp_remote_retrieve_response_code( $response ) !== 200 ) {
+        continue;
+      }
+      $json = json_decode( wp_remote_retrieve_body( $response ), true );
+      if ( !is_array( $json ) || !isset( $json[ $key ] ) ) {
+        continue;
+      }
+      $value = is_array( $json[ $key ] ) ? (string) reset( $json[ $key ] ) : (string) $json[ $key ];
+      if ( $value === '' || untrailingslashit( $value ) === $ours ) {
+        continue;
+      }
+      return [ 'url' => $url, 'issuer' => $value, 'plugin' => $this->guess_plugin_from_url( wp_json_encode( $json ) ) ];
+    }
+    return null;
+  }
+
+  /** Name of the active plugin whose slug appears in the given text (its REST namespace or paths), if any. */
+  private function guess_plugin_from_url( string $text ): ?string {
+    if ( !function_exists( 'get_plugins' ) ) {
+      require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
+    $plugins = get_plugins();
+    foreach ( (array) get_option( 'active_plugins', [] ) as $file ) {
+      $slug = dirname( $file );
+      if ( $slug === '.' || strpos( $slug, 'ai-engine' ) === 0 ) {
+        continue;
+      }
+      if ( strpos( $text, $slug ) !== false ) {
+        return $plugins[ $file ]['Name'] ?? $slug;
+      }
+    }
+    return null;
   }
 
   public function rest_mcp_self_test( $request ) {
@@ -2341,6 +2439,24 @@ class Meow_MWAI_Rest {
         $message = 'Got HTTP ' . $probe['status'] . ' from the loopback probe. Expected 200. Investigate the response in your CDN/origin logs.';
       }
 
+      // Another MCP plugin (Easy MCP AI on iggygarcia.com, 2026-10) can answer the host-root
+      // discovery URLs before we do. Clients that read them get its sign-in, not ours, and
+      // ChatGPT then says "This app does not provide a browser setup URL right now".
+      $conflict = $this->mcp_discovery_conflict( $args );
+      if ( $conflict ) {
+        $conflict_message = 'Another plugin answers your site\'s MCP sign-in discovery (' . esc_html( $conflict['url'] ) . ' points to '
+          . esc_html( $conflict['issuer'] ) . ( $conflict['plugin'] ? ', from ' . esc_html( $conflict['plugin'] ) : '' ) . '). '
+          . 'Assistants that read it are sent to that plugin\'s sign-in instead of AI Engine\'s, and connecting fails. '
+          . 'Fix: deactivate the other MCP plugin, then remove and add the connector again in your assistant.';
+        if ( $verdict === 'ok' ) {
+          $verdict = 'discovery_conflict';
+          $message = $conflict_message;
+        }
+        else {
+          $message .= ' ' . $conflict_message;
+        }
+      }
+
       // A site that answers on both apex and www advertises only one of them in its OAuth
       // metadata, because everything there is built from home_url(). A user who types the
       // other spelling gets told the resource lives on a different origin than the one they
@@ -2417,6 +2533,7 @@ class Meow_MWAI_Rest {
         'nested_htaccess' => $nested_htaccess,
         'cache_probe' => $cache_probe,
         'auth_echo' => $auth_echo,
+        'conflict' => $conflict,
       ], 200 );
     }
     catch ( Exception $e ) {

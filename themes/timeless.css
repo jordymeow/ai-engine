@@ -3960,7 +3960,7 @@ body > textarea[aria-hidden=true][tabindex="-1"] {
     z-index: 9999999999;
   }
   .mwai-timeless-theme.mwai-window.mwai-open .mwai-body {
-    min-height: calc(100dvh - var(--mwai-headerHeight));
+    min-height: calc(var(--mwai-vv-height, 100dvh) - var(--mwai-headerHeight));
   }
   .mwai-timeless-theme .mwai-input {
     display: flex !important;

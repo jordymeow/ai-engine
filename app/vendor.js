@@ -2742,7 +2742,7 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
     margin-top: ${e=>e.$inline?"0":"8px"};
     ${e=>e.$inline?"margin-left: auto;":""}
   }
-`,u=({icon:e="folder-open",title:t="Nothing yet",subtitle:n,action:r,inline:a=!1,iconSize:i,style:s,className:u})=>o().createElement(c,{$inline:a,style:s,className:u},e&&o().createElement("span",{className:"neko-empty-icon"},o().createElement(l.z,{icon:e,width:i||(a?18:28)})),o().createElement("div",{className:"neko-empty-body"},t&&o().createElement("p",{className:"neko-empty-title"},t),n&&o().createElement("p",{className:"neko-empty-subtitle"},n)),r&&o().createElement("div",{className:"neko-empty-action"},r));u.propTypes={icon:i().string,title:i().node,subtitle:i().node,action:i().node,inline:i().bool,iconSize:i().number,style:i().object,className:i().string}},3646(e,t,n){"use strict";n.d(t,{n:()=>m});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(7252),c=n(9018),u=n(8956);function d(){return d=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)({}).hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},d.apply(null,arguments)}const p=s.Ay.div`
+`,u=({icon:e="folder-open",title:t="Nothing yet",subtitle:n,action:r,inline:a=!1,iconSize:i,style:s,className:u})=>o().createElement(c,{$inline:a,style:s,className:u},e&&o().createElement("span",{className:"neko-empty-icon"},o().createElement(l.z,{icon:e,width:i||(a?18:28)})),o().createElement("div",{className:"neko-empty-body"},t&&o().createElement("p",{className:"neko-empty-title"},t),n&&o().createElement("p",{className:"neko-empty-subtitle"},n)),r&&o().createElement("div",{className:"neko-empty-action"},r));u.propTypes={icon:i().string,title:i().node,subtitle:i().node,action:i().node,inline:i().bool,iconSize:i().number,style:i().object,className:i().string}},3646(e,t,n){"use strict";n.d(t,{n:()=>x});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5206),l=n.n(s),c=n(5396),u=n(7252),d=n(9018),p=n(8956);function h(){return h=Object.assign?Object.assign.bind():function(e){for(var t=1;t<arguments.length;t++){var n=arguments[t];for(var r in n)({}).hasOwnProperty.call(n,r)&&(e[r]=n[r])}return e},h.apply(null,arguments)}const f=c.Ay.div`
   position: relative;
   color: white;
   font-family: var(--neko-font-family);
@@ -2935,6 +2935,7 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
     opacity: 1;
   }
 
+
   /* The moment a Free install turns Pro: played once, remembered in localStorage */
   &.neko-header-celebrate .neko-header-logo-container {
     transition: background 0.9s ease, box-shadow 0.9s ease, border-color 0.9s ease;
@@ -3066,7 +3067,50 @@ const f=(0,n(4490).A)("circle-dot",[["circle",{cx:"12",cy:"12",r:"10",key:"1mgla
       text-underline-offset: 2px;
     }
   }
-`,h=Array.from({length:10},(e,t)=>{const n=t/10*Math.PI*2;return{"--dx":`${Math.round(44*Math.cos(n))}px`,"--dy":`${Math.round(34*Math.sin(n))}px`}}),f=e=>{var t;const{title:n="NekoUI",section:a=null,subtitle:i="By Meow Apps",children:s,isPro:f,showFreeBadge:m=!0,proUrl:g,version:y}=e,b=(0,u.H)(g,"plugin-header"),v=!1===f,k=((e,t)=>{const[n,o]=(0,r.useState)(null);return(0,r.useLayoutEffect)(()=>{if(void 0===t)return;const n=`neko-header-tier:${e}`;try{t&&"free"===localStorage.getItem(n)&&o("arm"),localStorage.setItem(n,t?"pro":"free")}catch(e){}},[e,t]),(0,r.useEffect)(()=>{if("arm"===n){const e=requestAnimationFrame(()=>requestAnimationFrame(()=>o("lit")));return()=>cancelAnimationFrame(e)}if("lit"===n){const e=setTimeout(()=>o(null),3200);return()=>clearTimeout(e)}},[n]),n})(n,f),x="lit"===k,w=()=>window.open(b,"_blank","noopener,noreferrer"),E=(0,r.useRef)(null);(0,r.useLayoutEffect)(()=>{const e=E.current;if(!e)return;const t=()=>{for(let t=0;t<=2&&(e.dataset.compact=String(t),!(e.scrollWidth<=e.clientWidth+1));t++);e.querySelectorAll(".neko-button.header.has-icon").forEach(t=>{var n;const r=null===(n=t.querySelector(".button-text"))||void 0===n||null===(n=n.textContent)||void 0===n?void 0:n.trim();"2"===e.dataset.compact&&r&&!t.title?(t.title=r,t.dataset.autoTitle="1"):"2"!==e.dataset.compact&&t.dataset.autoTitle&&(t.removeAttribute("title"),delete t.dataset.autoTitle)})};if(t(),"undefined"==typeof ResizeObserver)return;const n=new ResizeObserver(t);return n.observe(e),()=>n.disconnect()},[s,a,n]);const C=["neko-header"];return v&&C.push("neko-header-free"),!0===f&&C.push("neko-header-pro"),"arm"===k&&C.push("neko-header-arm"),x&&C.push("neko-header-celebrate"),o().createElement(p,{ref:E,className:C.join(" ")},o().createElement("div",d({className:"neko-header-logo-container"},v&&{title:"See what Pro adds",role:"link",tabIndex:0,onClick:w,onKeyDown:e=>{"Enter"===e.key&&w()}}),o().createElement(l.r,null),v&&o().createElement("span",{className:"neko-header-whisper"},"PRO"),x&&h.map((e,t)=>o().createElement("span",{key:t,className:"neko-header-spark",style:e}))),o().createElement("div",{className:"neko-header-title-container"},o().createElement("div",{className:"neko-header-title-row"},o().createElement("h1",{className:"neko-header-title"},n),!!a&&o().createElement(o().Fragment,null,o().createElement("span",{className:"neko-header-separator"},"›"),o().createElement("span",{className:"neko-header-section"},a)),x&&o().createElement("span",{className:"neko-header-toast"},"Welcome to Pro, thank you for your support!")),o().createElement("small",{className:"neko-header-subtitle"},o().createElement("a",{target:"_blank",rel:"noopener noreferrer",href:(0,u.H)("https://meowapps.com/","plugin-subtitle")},i),!0===f&&o().createElement("span",{className:"neko-header-version pro"},"Pro"),v&&m&&o().createElement("a",{className:"neko-header-version",href:b,target:"_blank",rel:"noopener noreferrer"},"Free"))),o().createElement("div",{className:"neko-header-extra-content"},s),!(null==y||!y.current)&&!(null==y||!y.latest)&&o().createElement("div",{className:"neko-header-version-line"+(y.behind?" behind":"")},o().createElement(c.z,{raw:!0,icon:y.behind?"warning":"check-circle",width:12,height:12,className:"neko-header-version-icon"}),y.behind?o().createElement(o().Fragment,null,y.current," → ",y.latest," available",!(null===(t=y.action)||void 0===t||!t.url)&&o().createElement(o().Fragment,null," · ",o().createElement("a",d({href:y.action.url},y.action.external&&{target:"_blank",rel:"noopener noreferrer"}),y.action.label))):o().createElement(o().Fragment,null,y.current," · latest")))},m=e=>o().createElement(f,e);m.propTypes={title:i().string,section:i().string,subtitle:i().string,children:i().node,isPro:i().bool,showFreeBadge:i().bool,proUrl:i().string,version:i().shape({current:i().string,latest:i().string,behind:i().bool,action:i().shape({label:i().string,url:i().string,external:i().bool})})}},9018(e,t,n){"use strict";n.d(t,{z:()=>g});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(6779),c=n(9176),u=n(9825),d=n(4928),p=n(6038);const h=s.Ay.div`
+`,m=Array.from({length:10},(e,t)=>{const n=t/10*Math.PI*2;return{"--dx":`${Math.round(44*Math.cos(n))}px`,"--dy":`${Math.round(34*Math.sin(n))}px`}}),g=c.Ay.div`
+  position: fixed;
+  z-index: 100000;
+  width: 240px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fffaf0;
+  border: 1px solid #f1d58a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  color: #4a3a12;
+  font-family: var(--neko-font-family);
+  font-size: 12.5px;
+  line-height: 1.45;
+  pointer-events: none;
+  animation: nekoPriceIn 0.2s ease;
+
+  b { color: #2b2006; font-weight: 700; }
+  span { display: block; margin-top: 4px; color: #6b5a2c; }
+
+  @keyframes nekoPriceIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+`,y=(e,t)=>{if("undefined"==typeof window||!window[e])return null;const n=(e=>{try{const t=new URL(e);return[t.searchParams.get("utm_source"),t.pathname.split("/")[1]].filter(Boolean)}catch(e){return[]}})(t).find(t=>window[e][t]);return n?window[e][n]:null},b=c.Ay.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  /* The header's bottom strip, not a floating card (Jordy, 11-01): flush, square, full width. */
+  margin: 0;
+  padding: 8px 10px 8px 14px;
+  background: #fff;
+  border-bottom: 1px solid #e3e6ec;
+  color: #1d2327;
+  font-size: 13px;
+
+  .neko-review-stars { color: #f5b928; letter-spacing: 1px; }
+  .neko-review-text { flex: 1; min-width: 220px; }
+  .neko-review-go {
+    background: var(--neko-main-color); color: #fff; border: 0; border-radius: 99px;
+    padding: 5px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .neko-review-later, .neko-review-close {
+    background: none; border: 0; color: #646970; cursor: pointer; font-size: 12.5px; padding: 4px;
+  }
+  .neko-review-close { font-size: 16px; line-height: 1; }
+`,v=({review:e,name:t,isPro:n})=>{const[a,i]=(0,r.useState)(!1);if(a)return null;const s=t=>{i(!0),fetch(e.ajax,{method:"POST",credentials:"same-origin",body:new URLSearchParams({action:"meowapps_review",_ajax_nonce:e.nonce,prefix:e.prefix,choice:t})}).catch(()=>{})};return o().createElement(b,{className:"neko-review-line"},o().createElement("span",{className:"neko-review-stars"},"★★★★★"),o().createElement("span",{className:"neko-review-text"},n?"Thanks for supporting us with Pro! ":"","Is ",t," doing a good job? A short review on WordPress.org helps other people find it."),o().createElement("button",{className:"neko-review-go",onClick:()=>{window.open(e.url,"_blank","noopener,noreferrer"),s("done")}},"Write a review"),o().createElement("button",{className:"neko-review-later",onClick:()=>s("later")},"Later"),o().createElement("button",{className:"neko-review-close",title:"Don't ask again","aria-label":"Don't ask again",onClick:()=>s("never")},"×"))},k=e=>{var t;const{title:n="NekoUI",section:a=null,subtitle:i="By Meow Apps",children:s,isPro:c,showFreeBadge:b=!0,proUrl:k,version:x}=e,w=(0,p.H)(k,"plugin-header"),E=!1===c,C=((e,t)=>{const[n,o]=(0,r.useState)(null);return(0,r.useLayoutEffect)(()=>{if(void 0===t)return;const n=`neko-header-tier:${e}`;try{t&&"free"===localStorage.getItem(n)&&o("arm"),localStorage.setItem(n,t?"pro":"free")}catch(e){}},[e,t]),(0,r.useEffect)(()=>{if("arm"===n){const e=requestAnimationFrame(()=>requestAnimationFrame(()=>o("lit")));return()=>cancelAnimationFrame(e)}if("lit"===n){const e=setTimeout(()=>o(null),3200);return()=>clearTimeout(e)}},[n]),n})(n,c),A="lit"===C,S=()=>window.open(w,"_blank","noopener,noreferrer"),M=E?(e=>{const t=y("meowPrices",e);return t&&t.from?t:null})(k):null,[O,R]=(0,r.useState)(null),_=e=>{if(!M)return;const t=e.currentTarget.getBoundingClientRect();R({top:t.bottom+10,left:t.left})},z=()=>R(null),N=(0,r.useRef)(null);(0,r.useLayoutEffect)(()=>{const e=N.current;if(!e)return;const t=()=>{for(let t=0;t<=2&&(e.dataset.compact=String(t),!(e.scrollWidth<=e.clientWidth+1));t++);e.querySelectorAll(".neko-button.header.has-icon").forEach(t=>{var n;const r=null===(n=t.querySelector(".button-text"))||void 0===n||null===(n=n.textContent)||void 0===n?void 0:n.trim();"2"===e.dataset.compact&&r&&!t.title?(t.title=r,t.dataset.autoTitle="1"):"2"!==e.dataset.compact&&t.dataset.autoTitle&&(t.removeAttribute("title"),delete t.dataset.autoTitle)})};if(t(),"undefined"==typeof ResizeObserver)return;const n=new ResizeObserver(t);return n.observe(e),()=>n.disconnect()},[s,a,n]);const P=["neko-header"];E&&P.push("neko-header-free"),!0===c&&P.push("neko-header-pro"),"arm"===C&&P.push("neko-header-arm"),A&&P.push("neko-header-celebrate");const T=y("meowReviews",k);return o().createElement(o().Fragment,null,o().createElement(f,{ref:N,className:P.join(" ")},o().createElement("div",h({className:"neko-header-logo-container"},E&&{...!M&&{title:"See what Pro adds"},role:"link",tabIndex:0,onClick:S,onKeyDown:e=>{"Enter"===e.key&&S()},onMouseEnter:_,onMouseLeave:z,onFocus:_,onBlur:z}),o().createElement(u.r,null),E&&!M&&o().createElement("span",{className:"neko-header-whisper"},"PRO"),A&&m.map((e,t)=>o().createElement("span",{key:t,className:"neko-header-spark",style:e}))),M&&O&&"undefined"!=typeof document&&l().createPortal(o().createElement(g,{style:{top:O.top,left:O.left}},o().createElement("b",null,"Pro from $",Math.round(M.from)),o().createElement("span",null,"All the Pro features, support from us, and the golden badge. And it helps us 💛")),document.body),o().createElement("div",{className:"neko-header-title-container"},o().createElement("div",{className:"neko-header-title-row"},o().createElement("h1",{className:"neko-header-title"},n),!!a&&o().createElement(o().Fragment,null,o().createElement("span",{className:"neko-header-separator"},"›"),o().createElement("span",{className:"neko-header-section"},a)),A&&o().createElement("span",{className:"neko-header-toast"},"Welcome to Pro, thank you for your support!")),o().createElement("small",{className:"neko-header-subtitle"},o().createElement("a",{target:"_blank",rel:"noopener noreferrer",href:(0,p.H)("https://meowapps.com/","plugin-subtitle")},i),!0===c&&o().createElement("span",{className:"neko-header-version pro"},"Pro"),E&&b&&o().createElement("a",{className:"neko-header-version",href:w,target:"_blank",rel:"noopener noreferrer"},"Free"))),o().createElement("div",{className:"neko-header-extra-content"},s),!(null==x||!x.current)&&!(null==x||!x.latest)&&o().createElement("div",{className:"neko-header-version-line"+(x.behind?" behind":"")},o().createElement(d.z,{raw:!0,icon:x.behind?"warning":"check-circle",width:12,height:12,className:"neko-header-version-icon"}),x.behind?o().createElement(o().Fragment,null,x.current," → ",x.latest," available",!(null===(t=x.action)||void 0===t||!t.url)&&o().createElement(o().Fragment,null," · ",o().createElement("a",h({href:x.action.url},x.action.external&&{target:"_blank",rel:"noopener noreferrer"}),x.action.label))):o().createElement(o().Fragment,null,x.current," · latest"))),!!T&&o().createElement(v,{review:T,name:T.name||n,isPro:!0===c}))},x=e=>o().createElement(k,e);x.propTypes={title:i().string,section:i().string,subtitle:i().string,children:i().node,isPro:i().bool,showFreeBadge:i().bool,proUrl:i().string,version:i().shape({current:i().string,latest:i().string,behind:i().bool,action:i().shape({label:i().string,url:i().string,external:i().bool})})}},9018(e,t,n){"use strict";n.d(t,{z:()=>g});var r=n(1594),o=n.n(r),a=n(390),i=n.n(a),s=n(5396),l=n(6779),c=n(9176),u=n(9825),d=n(4928),p=n(6038);const h=s.Ay.div`
   display: flex;
   align-items: center;
 
@@ -4636,14 +4680,7 @@ const r=(0,n(7927).A)("Ban",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Bot",[["path",{d:"M12 8V4H8",key:"hb8ula"}],["rect",{width:"16",height:"12",x:"4",y:"8",rx:"2",key:"enze0r"}],["path",{d:"M2 14h2",key:"vft8re"}],["path",{d:"M20 14h2",key:"4cs60a"}],["path",{d:"M15 13v2",key:"1xurst"}],["path",{d:"M9 13v2",key:"rq6x2g"}]])},8220(e,t,n){"use strict";n.d(t,{A:()=>r});
-/**
- * @license lucide-react v0.454.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const r=(0,n(7927).A)("Boxes",[["path",{d:"M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z",key:"lc1i9w"}],["path",{d:"m7 16.5-4.74-2.85",key:"1o9zyk"}],["path",{d:"m7 16.5 5-3",key:"va8pkn"}],["path",{d:"M7 16.5v5.17",key:"jnp8gn"}],["path",{d:"M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z",key:"8zsnat"}],["path",{d:"m17 16.5-5-3",key:"8arw3v"}],["path",{d:"m17 16.5 4.74-2.85",key:"8rfmw"}],["path",{d:"M17 16.5v5.17",key:"k6z78m"}],["path",{d:"M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z",key:"1xygjf"}],["path",{d:"M12 8 7.26 5.15",key:"1vbdud"}],["path",{d:"m12 8 4.74-2.85",key:"3rx089"}],["path",{d:"M12 13.5V8",key:"1io7kd"}]])},5655(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Bot",[["path",{d:"M12 8V4H8",key:"hb8ula"}],["rect",{width:"16",height:"12",x:"4",y:"8",rx:"2",key:"enze0r"}],["path",{d:"M2 14h2",key:"vft8re"}],["path",{d:"M20 14h2",key:"4cs60a"}],["path",{d:"M15 13v2",key:"1xurst"}],["path",{d:"M9 13v2",key:"rq6x2g"}]])},5655(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4713,7 +4750,14 @@ const r=(0,n(7927).A)("ChevronRight",[["path",{d:"m9 18 6-6-6-6",key:"mthhwq"}]]
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("CircleAlert",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["line",{x1:"12",x2:"12",y1:"8",y2:"12",key:"1pkeuh"}],["line",{x1:"12",x2:"12.01",y1:"16",y2:"16",key:"4dfq90"}]])},5849(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("CircleAlert",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["line",{x1:"12",x2:"12",y1:"8",y2:"12",key:"1pkeuh"}],["line",{x1:"12",x2:"12.01",y1:"16",y2:"16",key:"4dfq90"}]])},4671(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("Coins",[["circle",{cx:"8",cy:"8",r:"6",key:"3yglwk"}],["path",{d:"M18.09 10.37A6 6 0 1 1 10.34 18",key:"t5s6rm"}],["path",{d:"M7 6h1v4",key:"1obek4"}],["path",{d:"m16.71 13.88.7.71-2.82 2.82",key:"1rbuyh"}]])},5849(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4825,14 +4869,7 @@ const r=(0,n(7927).A)("Image",[["rect",{width:"18",height:"18",x:"3",y:"3",rx:"2
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("Images",[["path",{d:"M18 22H4a2 2 0 0 1-2-2V6",key:"pblm9e"}],["path",{d:"m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18",key:"nf6bnh"}],["circle",{cx:"12",cy:"8",r:"2",key:"1822b1"}],["rect",{width:"16",height:"16",x:"6",y:"2",rx:"2",key:"12espp"}]])},3269(e,t,n){"use strict";n.d(t,{A:()=>r});
-/**
- * @license lucide-react v0.454.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const r=(0,n(7927).A)("Infinity",[["path",{d:"M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z",key:"1z0uae"}]])},1525(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("Images",[["path",{d:"M18 22H4a2 2 0 0 1-2-2V6",key:"pblm9e"}],["path",{d:"m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18",key:"nf6bnh"}],["circle",{cx:"12",cy:"8",r:"2",key:"1822b1"}],["rect",{width:"16",height:"16",x:"6",y:"2",rx:"2",key:"12espp"}]])},1525(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *
@@ -4944,7 +4981,14 @@ const r=(0,n(7927).A)("PenLine",[["path",{d:"M12 20h9",key:"t2du7b"}],["path",{d
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const r=(0,n(7927).A)("PencilLine",[["path",{d:"M12 20h9",key:"t2du7b"}],["path",{d:"M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z",key:"1ykcvy"}],["path",{d:"m15 5 3 3",key:"1w25hb"}]])},7307(e,t,n){"use strict";n.d(t,{A:()=>r});
+const r=(0,n(7927).A)("PencilLine",[["path",{d:"M12 20h9",key:"t2du7b"}],["path",{d:"M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z",key:"1ykcvy"}],["path",{d:"m15 5 3 3",key:"1w25hb"}]])},8444(e,t,n){"use strict";n.d(t,{A:()=>r});
+/**
+ * @license lucide-react v0.454.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const r=(0,n(7927).A)("Pencil",[["path",{d:"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",key:"1a8usu"}],["path",{d:"m15 5 4 4",key:"1mk7zo"}]])},7307(e,t,n){"use strict";n.d(t,{A:()=>r});
 /**
  * @license lucide-react v0.454.0 - ISC
  *

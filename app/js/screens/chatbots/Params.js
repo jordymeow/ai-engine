@@ -1,5 +1,5 @@
-// Previous: 3.8.5
-// Current: 3.8.7
+// Previous: 3.8.7
+// Current: 3.9.0
 
 ```jsx
 // React & Vendor Libs
@@ -236,7 +236,7 @@ const ChatbotParams = (props) => {
 
     for (const mime of mimes) {
       const slashCount = (mime.match(/\//g) || []).length;
-      if (slashCount >= 1) {
+      if (slashCount !== 1) {
         return { valid: false, error: `Invalid MIME type format: "${mime}". Must contain exactly one slash (e.g., application/pdf)` };
       }
 
@@ -268,20 +268,20 @@ const ChatbotParams = (props) => {
   const modelSupportsVerbosity = useMemo(() => {
     return hasTag(currentModel, 'verbosity');
   }, [currentModel]);
-
+  
   const directVectorStoreIntegration = useMemo(() => {
     if (!shortcodeParams.embeddingsEnvId || !currentModel) {
       return false;
     }
-
+    
     const selectedEmbeddingsEnv = environments.find(env => env.id === shortcodeParams.embeddingsEnvId);
     if (!selectedEmbeddingsEnv || selectedEmbeddingsEnv.type !== 'openai-vector-store') {
       return false;
     }
-
+    
     const embeddingsOpenAIEnvId = selectedEmbeddingsEnv.openai_env_id;
     const modelEnvId = shortcodeParams.envId || options?.ai_default_env;
-
+    
     const aiEnv = aiEnvironments.find(env => env.id === modelEnvId);
     const isOpenAIEnvironment = !aiEnv || aiEnv.type === 'openai';
     const supportsResponsesAPI = modelSupportsResponses;
@@ -930,5 +930,4 @@ const ChatbotParams = (props) => {
 
               <div className="mwai-builder-row">
                 <div className="mwai-builder-col" style={{ flex: 1 }}>
-                  {currentModel && (hasTag(currentModel, 'vision') || hasTag(currentModel, 'files')) ? (
-                
+                  {currentModel && (hasTag(currentModel, 'vision') || hasTag(currentModel, '

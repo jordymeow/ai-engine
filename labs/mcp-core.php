@@ -51,7 +51,87 @@ class Meow_MWAI_Labs_MCP_Core {
   // the quotes in shortcode attributes ([x a="b"] -> a=&quot;b&quot;), auto-link
   // URLs, and <p>-wrap lines, silently breaking shortcode rendering. Markdown
   // conversion is reserved for plain prose with no existing markup.
-  private function prepare_new_content( string $v ): string {
+  // Markdown becomes real blocks where the block editor is used for this post type, so the block
+  // tools (wp_get_blocks, wp_edit_blocks) work on what assistants write. Each element goes through
+  // the same validated generators as wp_write_blocks; anything without an exact match (tables,
+  // nested lists) becomes an HTML block, never a guess. Classic-editor sites keep plain HTML.
+  private function markdown_to_blocks( string $markdown, string $post_type ): string {
+    $html = $this->core->markdown_to_html( $markdown );
+    if ( !function_exists( 'use_block_editor_for_post_type' ) || !use_block_editor_for_post_type( $post_type ) || !class_exists( 'DOMDocument' ) ) {
+      return $html;
+    }
+    $dom = new DOMDocument();
+    $previous = libxml_use_internal_errors( true );
+    $loaded = $dom->loadHTML( '<?xml encoding="utf-8"?><div id="mwai-root">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD );
+    libxml_clear_errors();
+    libxml_use_internal_errors( $previous );
+    $root = $loaded ? $dom->getElementById( 'mwai-root' ) : null;
+    if ( !$root ) {
+      return $html;
+    }
+    $inner = function ( DOMNode $node ) use ( $dom ) {
+      $out = '';
+      foreach ( $node->childNodes as $child ) {
+        $out .= $dom->saveHTML( $child );
+      }
+      return trim( $out );
+    };
+    $specs = [];
+    foreach ( $root->childNodes as $node ) {
+      if ( $node->nodeType === XML_TEXT_NODE ) {
+        if ( trim( $node->textContent ) !== '' ) {
+          $specs[] = [ 'type' => 'paragraph', 'content' => trim( $dom->saveHTML( $node ) ) ];
+        }
+        continue;
+      }
+      if ( $node->nodeType !== XML_ELEMENT_NODE ) {
+        continue;
+      }
+      $tag = strtolower( $node->nodeName );
+      if ( preg_match( '/^h([1-6])$/', $tag, $m ) ) {
+        $specs[] = [ 'type' => 'heading', 'level' => (int) $m[1], 'content' => $inner( $node ) ];
+      }
+      elseif ( $tag === 'p' ) {
+        $only = $node->childNodes->length === 1 ? $node->firstChild : null;
+        if ( $only && strtolower( $only->nodeName ) === 'img' ) {
+          $specs[] = [ 'type' => 'image', 'url' => $only->getAttribute( 'src' ), 'alt' => $only->getAttribute( 'alt' ) ];
+        }
+        else {
+          $specs[] = [ 'type' => 'paragraph', 'content' => $inner( $node ) ];
+        }
+      }
+      elseif ( ( $tag === 'ul' || $tag === 'ol' ) && !$node->getElementsByTagName( 'ul' )->length && !$node->getElementsByTagName( 'ol' )->length ) {
+        $items = [];
+        foreach ( $node->childNodes as $li ) {
+          if ( $li->nodeType === XML_ELEMENT_NODE && strtolower( $li->nodeName ) === 'li' ) {
+            // A "loose" Markdown list wraps each item in <p>: the list item holds the text itself.
+            $items[] = preg_replace( '#^<p>(.*)</p>$#s', '$1', $inner( $li ) );
+          }
+        }
+        $specs[] = $items ? [ 'type' => 'list', 'ordered' => $tag === 'ol', 'items' => $items ] : [ 'type' => 'html', 'content' => $dom->saveHTML( $node ) ];
+      }
+      elseif ( $tag === 'blockquote' ) {
+        $text = trim( preg_replace( '#</p>\s*<p>#', '<br>', preg_replace( '#^<p>|</p>$#', '', $inner( $node ) ) ) );
+        $specs[] = [ 'type' => 'quote', 'content' => $text ];
+      }
+      elseif ( $tag === 'pre' ) {
+        $specs[] = [ 'type' => 'code', 'content' => $node->textContent ];
+      }
+      elseif ( $tag === 'hr' ) {
+        $specs[] = [ 'type' => 'separator' ];
+      }
+      else {
+        $specs[] = [ 'type' => 'html', 'content' => $dom->saveHTML( $node ) ];
+      }
+    }
+    if ( !$specs ) {
+      return $html;
+    }
+    list( $markup, $err ) = $this->blocks_to_markup( $specs );
+    return $err === null ? $markup : $html;
+  }
+
+  private function prepare_new_content( string $v, string $post_type = 'post' ): string {
     $hasBlocks = strpos( $v, '<!-- wp:' ) !== false;
     $hasHtml = (bool) preg_match( '/<(?:p|div|h[1-6]|ul|ol|li|figure|table|blockquote|section|img|a|br|span|strong|em)\b[^>]*>/i', $v );
     // Generic shortcode detection (independent of whether the shortcode is
@@ -62,7 +142,7 @@ class Meow_MWAI_Labs_MCP_Core {
     if ( $hasBlocks || $hasHtml || $hasShortcode ) {
       return $this->store_html( $v );
     }
-    return $this->core->markdown_to_html( $v );
+    return $this->markdown_to_blocks( $v, $post_type );
   }
 
   // Recursively blank out every block's attributes. Gallery/media blocks (e.g.
@@ -642,7 +722,7 @@ class Meow_MWAI_Labs_MCP_Core {
       /* -------- Comments -------- */
       'wp_get_comments' => [
         'name' => 'wp_get_comments',
-        'description' => 'Retrieve comments (fields: comment_ID, comment_post_ID, comment_type, comment_author, comment_content, comment_date, comment_approved). Returns 10 by default. Filter by commenter with `user_id` (registered user ID) or `author_email`. Use `type` to filter by comment type; pass `type: "note"` to read WordPress 6.9 editor Notes (block-level feedback), where comment_approved "0" means open/unresolved and "1" means resolved. When reading notes, all statuses are returned unless you pass an explicit `status`.',
+        'description' => 'List comments (comment_ID, comment_post_ID, comment_type, comment_author, comment_content, comment_date, comment_approved), 10 by default. Filter by post_id, status ("hold" for pending), type, search, user_id or author_email. type "note" reads editor Notes (WordPress 6.9+): comment_approved "0" is open, "1" resolved, and all statuses are returned unless status is given.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -771,7 +851,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_update_option' => [
         'name' => 'wp_update_option',
-        'description' => 'Create or update a WordPress option. Arrays/objects are stored natively (a JSON string is decoded back to an array first). WordPress refreshes the option cache automatically, but full-page caches (Varnish, WP Rocket, Cloudflare) are not purged, so a front-end may lag until its cache expires; integrations can hook the mwai_mcp_mutate action to purge on writes.',
+        'description' => 'Create or update a WordPress option. Arrays and objects are stored natively (a JSON string is decoded first). Page caches (Varnish, WP Rocket, Cloudflare) are not purged, so the front end may lag until they expire.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -855,7 +935,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_get_post' => [
         'name' => 'wp_get_post',
-        'description' => 'Get basic post data by ID: title, content, status, dates, permalink. Reads through the WordPress object cache; if you just wrote with wp_create_post / wp_update_post / wp_alter_post, the write tools bust caches automatically so a follow-up read returns fresh data. For complete data including all meta and terms, use wp_get_post_snapshot instead. Set content_format to "prose" to strip block-attribute JSON (e.g. huge gallery blobs) and return just the prose.',
+        'description' => 'Get a post by ID: title, content, status, dates, permalink (fresh right after the write tools). content_format "prose" drops block-attribute JSON such as large galleries. For its meta and terms too, use wp_get_post_snapshot.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -891,7 +971,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_create_post' => [
         'name' => 'wp_create_post',
-        'description' => 'Create a new post, page, or any custom post type. post_title is required. post_content accepts HTML, Gutenberg blocks, and shortcodes (stored as-is, attribute quotes preserved); plain prose with no markup is converted from Markdown. post_status defaults to "draft" and post_type defaults to "post" – pass post_type: "page" for a page, or any registered CPT slug (product, event, etc.). Set categories later with wp_add_post_terms; meta_input is an associative array of custom-field key/value pairs. For small surgical edits to an existing post (insert/replace a paragraph or shortcode without resending the whole body), use wp_alter_post instead.',
+        'description' => 'Create a post, a page or any post type (post_type, default "post"; e.g. "page", "product"). post_title is required; post_status defaults to "draft". post_content takes HTML, block markup or shortcodes as is; plain prose is converted from Markdown. meta_input sets custom fields; add categories afterwards with wp_add_post_terms. To change part of an existing post, use wp_alter_post or wp_edit_blocks instead of resending it.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -909,7 +989,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_update_post' => [
         'name' => 'wp_update_post',
-        'description' => 'Update post fields and/or meta in ONE call. Pass ID + "fields" object (post_title, post_content, post_status, etc.) and/or "meta_input" object for custom fields. Post fields may also be passed at the top level (e.g. ID + post_title directly). Efficient for WooCommerce products: update title + price + stock together. Note: post_category REPLACES categories; use wp_add_post_terms to append instead. Use schedule_for to easily schedule posts.',
+        'description' => 'Update a post\'s fields and/or custom fields in one call: ID, plus "fields" (post_title, post_content, post_status...; fields at the top level work too) and/or "meta_input". post_category replaces the categories (wp_add_post_terms adds to them). schedule_for (a local date and time) schedules the post.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -941,7 +1021,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_delete_post' => [
         'name' => 'wp_delete_post',
-        'description' => 'Delete, trash, or remove a post, page, or any custom post type by ID. Without force, it is moved to the trash (can be restored), or refused when it cannot be (already in the trash, or the site has no trash). With force: true, it is permanently destroyed (irreversible). Works for posts, pages, products, events, attachments, or any registered CPT.',
+        'description' => 'Move a post, page, product or any post type to the trash (refused when it is already there or the site has no trash). force: true deletes it for good, which cannot be undone.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -954,7 +1034,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_alter_post' => [
         'name' => 'wp_alter_post',
-        'description' => 'Search-and-replace inside a post field without re-uploading the entire content. Efficient for making small edits to long content. With regex=true, pass a BARE PHP-PCRE pattern (no delimiters) in "search" and put any modifiers in "flags" (e.g. flags="i"); the pattern is wrapped with a safe delimiter internally, so patterns containing "/" (like Gutenberg block markers <!-- /wp:paragraph -->) work without escaping. Example: search="(<!-- /wp:paragraph -->)\\s*$" with flags="" appends to the last paragraph block. Backslashes must be JSON-escaped (\\s, \\d). A fully delimited pattern (/.../i) is also accepted for backward compatibility.',
+        'description' => 'Search and replace in one field of a post (post_content, post_excerpt or post_title) without resending the rest. With regex: true, "search" is a bare PCRE pattern without delimiters, modifiers go in "flags" (e.g. "i"), and "/" needs no escaping, so block markers work: search="(<!-- /wp:paragraph -->)\\s*$" matches the end of the last paragraph block. Backslashes must be JSON-escaped (\\s, \\d).',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -971,7 +1051,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_write_blocks' => [
         'name' => 'wp_write_blocks',
-        'description' => 'Build a valid Gutenberg (block editor) layout on an existing post or page from a simple block spec, so the result opens cleanly in the editor with no "invalid content" warnings. Create the post first with wp_create_post, then pass its ID plus "blocks", an ordered array of specs like {"type":"heading","level":2,"content":"..."}. Supported types: paragraph (content), heading (content, level 1-6), list (items[], ordered), quote (content, citation), image (url, alt, caption), buttons (buttons[] of {text,url}), group (blocks[]), columns (columns[] of block-spec arrays), separator, spacer (height px), code (content), html (content, raw HTML escape hatch). content fields accept inline HTML. mode replaces (default), appends, or prepends. For prose you do not need to lay out visually, plain wp_create_post/wp_update_post with Markdown is simpler; use this when you want real, editable blocks.',
+        'description' => 'Lay out an existing post or page as real Gutenberg blocks that open cleanly in the editor (create the post first). "blocks" is an ordered array of specs like {"type":"heading","level":2,"content":"..."}. Types: paragraph (content), heading (content, level 1-6), list (items[], ordered), quote (content, citation), image (url, alt, caption), buttons (buttons[] of {text,url}), group (blocks[]), columns (columns[] of spec arrays), separator, spacer (height px), code (content), html (content, raw HTML). content accepts inline HTML. mode: replace (default), append or prepend. For plain prose, wp_create_post with Markdown is simpler.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -987,9 +1067,41 @@ class Meow_MWAI_Labs_MCP_Core {
         ],
         'accessLevel' => 'write',
       ],
+      'wp_get_blocks' => [
+        'name' => 'wp_get_blocks',
+        'description' => 'Read a post or page as an outline of its Gutenberg blocks: each block\'s path ("2", "2.1" for the second child of block 2), type, a short text excerpt, and key attributes, plus a hash. Much lighter than reading the whole content. Pass a path to get that one block in full (its markup and attributes). Then change blocks with wp_edit_blocks.',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'ID' => [ 'type' => 'integer', 'description' => 'Post or page ID.' ],
+            'path' => [ 'type' => 'string', 'description' => 'Optional. One block\'s path, to get its full markup.' ],
+          ],
+          'required' => [ 'ID' ],
+        ],
+        'accessLevel' => 'read',
+      ],
+      'wp_edit_blocks' => [
+        'name' => 'wp_edit_blocks',
+        'description' => 'Change blocks of a post without rewriting it, using the paths from wp_get_blocks. "operations" run in order, paths always refer to the outline you read (even after earlier operations moved things), and nothing is saved if one fails: {"op":"update","path":"2", with "search"+"replace" (text in the block and its children), "block" (a spec as in wp_write_blocks), "markup" (raw block markup), or "attrs" (merged, null removes one; only for settings kept in the block comment: to change what a heading or paragraph shows, use "block" or "markup", or the editor flags it invalid)}; {"op":"insert","path":"3","position":"before|after|inside","blocks":[specs] or "markup"} (no path with position "start" or "end"); {"op":"move","path":"4","to":"1","position":"before|after|inside"}; {"op":"delete","path":"5"}. dry_run previews the result; if_hash (from wp_get_blocks) refuses the edit if the post changed. Returns the new outline and hash.',
+        'inputSchema' => [
+          'type' => 'object',
+          'properties' => [
+            'ID' => [ 'type' => 'integer', 'description' => 'Post or page ID.' ],
+            'operations' => [
+              'type' => 'array',
+              'description' => 'Operations to apply, in order (see the tool description).',
+              'items' => [ 'type' => 'object', 'additionalProperties' => true ],
+            ],
+            'dry_run' => [ 'type' => 'boolean', 'description' => 'Return the resulting outline without saving.' ],
+            'if_hash' => [ 'type' => 'string', 'description' => 'Optional. The hash from wp_get_blocks; the edit is refused if the post changed since.' ],
+          ],
+          'required' => [ 'ID', 'operations' ],
+        ],
+        'accessLevel' => 'write',
+      ],
       'wp_list_block_patterns' => [
         'name' => 'wp_list_block_patterns',
-        'description' => 'List the block patterns registered on this site (core, theme, and plugin patterns). Patterns are ready-made, pre-validated block layouts (hero/banner sections, pricing tables, testimonials, galleries, calls to action) authored by the theme, so inserting one is on-brand and always opens cleanly in the editor. Discover a layout here, insert it with wp_insert_block_pattern, then adjust the placeholder text with wp_alter_post. Returns compact metadata (name, title, categories, description) by default; set include_content to true to also get the raw block markup. Filter with search (matches title/name/description/keywords) and/or category (e.g. "call-to-action", "gallery", "testimonials").',
+        'description' => 'List the block patterns of this site (core, theme, plugins): ready-made layouts (heroes, pricing tables, testimonials, galleries, calls to action) that match the theme and open cleanly in the editor. Insert one with wp_insert_block_pattern, then change its placeholder text. Returns name, title, categories and description (include_content adds the markup). Filter with search and/or category, e.g. "call-to-action".',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -1003,7 +1115,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_insert_block_pattern' => [
         'name' => 'wp_insert_block_pattern',
-        'description' => 'Insert a registered block pattern into a post or page by its name (get names from wp_list_block_patterns). Pattern markup is pre-validated theme/core content, so the result is on-brand and valid in the editor. mode "append" (default) adds it to the end, so you can compose a full page from several patterns in successive calls; "replace" overwrites the content; "prepend" adds it to the top. After inserting, swap placeholder text with wp_alter_post.',
+        'description' => 'Insert a block pattern (its name from wp_list_block_patterns) into a post or page. mode "append" (default) adds it at the end, to build a page from several patterns; "prepend" at the top; "replace" overwrites the content. Then change its placeholder text.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -1220,7 +1332,7 @@ class Meow_MWAI_Labs_MCP_Core {
       ],
       'wp_upload_request' => [
         'name' => 'wp_upload_request',
-        'description' => 'Upload a local file to the WordPress Media Library via a temporary upload endpoint. Use this instead of wp_upload_media when you have a local file (not a URL) — passing large base64 strings through MCP is impractical and will likely exceed context limits. Call this tool with the filename and optional metadata; it returns a one-time upload URL. Then use curl to POST the file: curl -X POST -F "file=@/local/path/file.jpg" "<upload_url>". The upload URL expires after 5 minutes and can only be used once.',
+        'description' => 'Upload a local file (not a URL) to the Media Library without passing it through the conversation: this returns a one-time upload URL, valid 5 minutes; then run curl -X POST -F "file=@/local/path/file.jpg" "<upload_url>". Use it instead of wp_upload_media with base64, which is far too large for files.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [
@@ -1289,12 +1401,12 @@ class Meow_MWAI_Labs_MCP_Core {
           'properties' => [
             'message' => [ 'type' => 'string', 'description' => 'Prompt describing the desired image.' ],
             'postId' => [ 'type' => 'integer', 'description' => 'Optional post ID to attach the image to.' ],
-            'resolution' => [ 'type' => 'string', 'description' => 'Optional aspect ratio or size, like "16:9", "1:1", "9:16" or "1536x1024". The closest shape the image model supports is used. Square by default.' ],
-            'envId' => [ 'type' => 'string', 'description' => 'Optional AI environment to use, by ID or by name as shown in AI Engine settings. Defaults to the site\'s image environment.' ],
-            'model' => [ 'type' => 'string', 'description' => 'Optional image model, like "gpt-image-1.5" or a Gemini image model. Defaults to the site\'s image model.' ],
-            'quality' => [ 'type' => 'string', 'description' => 'Optional quality, for models that support it (GPT Image: "low", "medium", "high" or "auto"). Lower is cheaper.' ],
-            'size' => [ 'type' => 'string', 'description' => 'Optional output size for Gemini image models: "1K" (default), "2K" or "4K"; Gemini 3.1 Flash Image also takes "512px". Ignored by other models.' ],
-            'filename' => [ 'type' => 'string', 'description' => 'Optional file name, like "red-fox-at-dawn" (the extension is added if missing). Defaults to the title, as a slug.' ],
+            'resolution' => [ 'type' => 'string', 'description' => 'Aspect ratio or size, like "16:9", "9:16" or "1536x1024" (the closest the model supports). Square by default.' ],
+            'envId' => [ 'type' => 'string', 'description' => 'AI environment, by ID or name. Defaults to the site image environment.' ],
+            'model' => [ 'type' => 'string', 'description' => 'Image model, like "gpt-image-1.5". Defaults to the site image model.' ],
+            'quality' => [ 'type' => 'string', 'description' => 'GPT Image quality: "low", "medium", "high" or "auto". Lower is cheaper.' ],
+            'size' => [ 'type' => 'string', 'description' => 'Gemini image models only: "1K" (default), "2K", "4K", or "512px" for Gemini 3.1 Flash Image.' ],
+            'filename' => [ 'type' => 'string', 'description' => 'File name, like "red-fox-at-dawn". Defaults to the title as a slug.' ],
             'title' => [ 'type' => 'string' ],
             'caption' => [ 'type' => 'string' ],
             'description' => [ 'type' => 'string' ],
@@ -1981,6 +2093,14 @@ class Meow_MWAI_Labs_MCP_Core {
         if ( $this->is_protected_for_viewer( $p ) ) {
           $out['protected'] = true;
         }
+        // On an Elementor page, post_content is only a plain copy: editing it changes nothing
+        // visible, and agents reported success anyway. Say so, and point to the right tools.
+        if ( defined( 'ELEMENTOR_VERSION' ) && get_post_meta( $p->ID, '_elementor_edit_mode', true ) === 'builder' ) {
+          $out['builder'] = 'elementor';
+          $out['builder_note'] = class_exists( 'MeowPro_MWAI_MCP_Elementor' ) && $this->core->get_option( 'mcp_elementor' )
+            ? 'Built with Elementor: post_content is only a copy. Read and edit it with elementor_get_page and the other elementor_* tools.'
+            : 'Built with Elementor: post_content is only a copy, and editing it will not change the visible page. The Elementor tools can be turned on in AI Engine → Settings → MCP → Tools.';
+        }
         $this->add_result_text( $r, wp_json_encode( $out, JSON_PRETTY_PRINT ) );
         break;
 
@@ -2112,7 +2232,7 @@ class Meow_MWAI_Labs_MCP_Core {
           'post_type' => sanitize_key( $a['post_type'] ?? 'post' ),
         ];
         if ( $a['post_content'] ?? '' ) {
-          $ins['post_content'] = $this->prepare_new_content( $a['post_content'] );
+          $ins['post_content'] = $this->prepare_new_content( $a['post_content'], $ins['post_type'] );
         }
         if ( $a['post_excerpt'] ?? '' ) {
           $ins['post_excerpt'] = $this->clean_html( $a['post_excerpt'] );
@@ -2140,7 +2260,7 @@ class Meow_MWAI_Labs_MCP_Core {
               // Pass the value as-is: update_post_meta() serializes arrays itself.
               // maybe_serialize() here double-serialized nested arrays, so they read
               // back as a string and consumers (e.g. Noptin) rejected them as legacy.
-              update_post_meta( $new, $this->raw_key( $k ), $v );
+              update_post_meta( $new, $this->raw_key( $k ), wp_slash( $v ) );
             }
           }
           $this->bust_post_cache( (int) $new, [ 'tool' => 'wp_create_post' ] );
@@ -2187,6 +2307,108 @@ class Meow_MWAI_Labs_MCP_Core {
         }
         $this->bust_post_cache( $wb_id, [ 'tool' => 'wp_write_blocks' ] );
         $this->add_result_text( $r, 'Wrote ' . count( $wb_blocks ) . ' block(s) to post ' . $wb_id . ' (mode: ' . $wb_mode . ').' );
+        break;
+
+        /* ===== Blocks: outline and edits (labs/mcp-blocks.php) ===== */
+      case 'wp_get_blocks':
+      case 'wp_edit_blocks':
+        $bk_post = get_post( intval( $a['ID'] ?? 0 ) );
+        if ( !$bk_post ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'Post not found (pass "ID").' ];
+          break;
+        }
+        if ( $tool === 'wp_get_blocks' ? $this->is_protected_for_viewer( $bk_post ) : !current_user_can( 'edit_post', $bk_post->ID ) ) {
+          $r['error'] = [ 'code' => -32603, 'message' => "You are not allowed to access post #{$bk_post->ID}." ];
+          break;
+        }
+        if ( !Meow_MWAI_Labs_MCP_Blocks::has_blocks( $bk_post->post_content ) ) {
+          $r['error'] = [ 'code' => -32602, 'message' => "Post #{$bk_post->ID} has no blocks (classic content). Use wp_alter_post or wp_update_post, or wp_write_blocks to rebuild it with blocks." ];
+          break;
+        }
+        $bk_root = Meow_MWAI_Labs_MCP_Blocks::parse( $bk_post->post_content );
+        $bk_hash = Meow_MWAI_Labs_MCP_Blocks::hash( $bk_post->post_content );
+        if ( $tool === 'wp_get_blocks' ) {
+          if ( isset( $a['path'] ) && $a['path'] !== '' ) {
+            $bk_block = Meow_MWAI_Labs_MCP_Blocks::find( $bk_root['innerBlocks'], (string) $a['path'] );
+            if ( !$bk_block ) {
+              $r['error'] = [ 'code' => -32602, 'message' => 'No block at path "' . $a['path'] . '". Call wp_get_blocks without a path for the outline.' ];
+              break;
+            }
+            $this->add_result_text( $r, wp_json_encode(
+              [ 'path' => (string) $a['path'], 'type' => Meow_MWAI_Labs_MCP_Blocks::type( $bk_block ),
+                'attrs' => (object) ( $bk_block['attrs'] ?? [] ), 'markup' => Meow_MWAI_Labs_MCP_Blocks::serialize_block( $bk_block ), 'hash' => $bk_hash ],
+              JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            ) );
+            break;
+          }
+          $this->add_result_text( $r, wp_json_encode( [ 'ID' => $bk_post->ID, 'title' => get_the_title( $bk_post ), 'hash' => $bk_hash,
+            'blocks' => Meow_MWAI_Labs_MCP_Blocks::outline( $bk_root['innerBlocks'] ) ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) );
+          break;
+        }
+        if ( !empty( $a['if_hash'] ) && $a['if_hash'] !== $bk_hash ) {
+          $r['error'] = [ 'code' => -32602, 'message' => 'The post changed since you read it. Call wp_get_blocks again.' ];
+          break;
+        }
+        $bk_ops = $a['operations'] ?? null;
+        if ( is_string( $bk_ops ) ) {
+          $bk_ops = json_decode( $bk_ops, true );
+        }
+        if ( !is_array( $bk_ops ) || !$bk_ops ) {
+          $r['error'] = [ 'code' => -32602, 'message' => '"operations" must be a non-empty array.' ];
+          break;
+        }
+        // New blocks come from the same validated specs as wp_write_blocks, or from raw markup.
+        $bk_to_blocks = function ( array $op, string $label ) {
+          if ( isset( $op['markup'] ) ) {
+            $markup = (string) $op['markup'];
+          }
+          else {
+            $specs = $op['blocks'] ?? ( isset( $op['block'] ) ? [ $op['block'] ] : null );
+            if ( is_string( $specs ) ) {
+              $specs = json_decode( $specs, true );
+            }
+            list( $markup, $err ) = $this->blocks_to_markup( $specs, 'blocks' );
+            if ( $err !== null ) {
+              throw new Exception( "$label: $err" );
+            }
+          }
+          $parsed = Meow_MWAI_Labs_MCP_Blocks::parse( $markup )['innerBlocks'];
+          if ( !$parsed ) {
+            throw new Exception( "$label: no block found in it." );
+          }
+          foreach ( $parsed as $i => $block ) {
+            unset( $parsed[ $i ]['_path'] );
+          }
+          return $parsed;
+        };
+        try {
+          $bk_root = Meow_MWAI_Labs_MCP_Blocks::apply( $bk_root, $bk_ops, $bk_to_blocks );
+        }
+        catch ( Exception $e ) {
+          $r['error'] = [ 'code' => -32602, 'message' => $e->getMessage() . ' Nothing was saved.' ];
+          break;
+        }
+        $bk_content = Meow_MWAI_Labs_MCP_Blocks::serialize( $bk_root );
+        // The outline after the edit, renumbered as wp_get_blocks will show it.
+        $bk_after = Meow_MWAI_Labs_MCP_Blocks::parse( $bk_content );
+        $bk_result = [ 'ID' => $bk_post->ID, 'operations' => count( $bk_ops ) ];
+        if ( !empty( $a['dry_run'] ) ) {
+          $bk_result['dry_run'] = true;
+          $bk_result['blocks'] = Meow_MWAI_Labs_MCP_Blocks::outline( $bk_after['innerBlocks'] );
+          $this->add_result_text( $r, wp_json_encode( $bk_result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) );
+          break;
+        }
+        $bk_res = wp_update_post( wp_slash( $this->keep_draft_date( [ 'ID' => $bk_post->ID, 'post_content' => $bk_content ] ) ), true );
+        if ( is_wp_error( $bk_res ) ) {
+          $r['error'] = [ 'code' => $bk_res->get_error_code(), 'message' => $bk_res->get_error_message() ];
+          break;
+        }
+        $this->bust_post_cache( $bk_post->ID, [ 'tool' => 'wp_edit_blocks' ] );
+        $bk_saved = get_post( $bk_post->ID )->post_content;
+        $bk_result['saved'] = true;
+        $bk_result['hash'] = Meow_MWAI_Labs_MCP_Blocks::hash( $bk_saved );
+        $bk_result['blocks'] = Meow_MWAI_Labs_MCP_Blocks::outline( Meow_MWAI_Labs_MCP_Blocks::parse( $bk_saved )['innerBlocks'] );
+        $this->add_result_text( $r, wp_json_encode( $bk_result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) );
         break;
 
         /* ===== Block patterns: list ===== */
@@ -2407,7 +2629,7 @@ class Meow_MWAI_Labs_MCP_Core {
           foreach ( $meta_input as $k => $v ) {
             // Pass the value as-is: update_post_meta() serializes arrays itself.
             // maybe_serialize() here double-serialized nested arrays.
-            update_post_meta( $u, $this->raw_key( $k ), $v );
+            update_post_meta( $u, $this->raw_key( $k ), wp_slash( $v ) );
           }
         }
 
@@ -2562,15 +2784,16 @@ class Meow_MWAI_Labs_MCP_Core {
           $meta = json_decode( $meta, true );
         }
 
-        // Pass values as-is: update_post_meta() serializes arrays itself, so
+        // update_post_meta() unslashes what it gets: wp_slash() keeps a "\" in a value (JSON, page
+        // builder data) from being stripped. It serializes arrays itself, so no maybe_serialize():
         // maybe_serialize() here double-serialized nested arrays into a string.
         if ( !empty( $meta ) && is_array( $meta ) ) {
           foreach ( $meta as $k => $v ) {
-            update_post_meta( $pid, $this->raw_key( $k ), $v );
+            update_post_meta( $pid, $this->raw_key( $k ), wp_slash( $v ) );
           }
         }
         elseif ( isset( $a['key'], $a['value'] ) ) {
-          update_post_meta( $pid, $this->raw_key( $a['key'] ), $a['value'] );
+          update_post_meta( $pid, $this->raw_key( $a['key'] ), wp_slash( $a['value'] ) );
         }
         else {
           $r['error'] = [ 'code' => -32602, 'message' => 'meta array or key/value required' ];
@@ -2772,7 +2995,7 @@ class Meow_MWAI_Labs_MCP_Core {
           }
         }
         $now = wp_get_post_terms( $post_id, $tax, [ 'fields' => 'id=>name' ] );
-        $list = is_wp_error( $now ) ? [] : array_map( fn( $id, $name ) => "$name (#$id)", array_keys( $now ), $now );
+        $list = is_wp_error( $now ) ? [] : array_map( fn ( $id, $name ) => "$name (#$id)", array_keys( $now ), $now );
         $this->add_result_text( $r, "Post #$post_id $tax: " . ( $list ? implode( ', ', $list ) : 'none' ) );
         break;
 

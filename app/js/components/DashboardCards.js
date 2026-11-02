@@ -1,5 +1,5 @@
-// Previous: 3.8.7
-// Current: 3.8.8
+// Previous: 3.8.8
+// Current: 3.9.0
 
 ```javascript
 // DashboardCards.js
@@ -12,7 +12,7 @@
 const { useState, useMemo, createInterpolateElement } = wp.element;
 import Styled from 'styled-components';
 import { NekoModal, NekoButton, nekoFetch, getNekoProviderBrand } from '@neko-ui';
-import { Bot, Server, Terminal, KeyRound, Smartphone, Database, Image as ImageIcon, Gauge, FlaskConical, Globe, PencilLine, ShieldAlert, Mic, Sparkles, X, Star, Zap, Plug, BrainCircuit, BarChart3, Lightbulb, Eye, Shuffle, TriangleAlert } from 'lucide-react';
+import { Bot, Server, Terminal, KeyRound, Smartphone, Database, Image as ImageIcon, Gauge, FlaskConical, Globe, PencilLine, ShieldAlert, Mic, Sparkles, X, Star, Zap, Plug, BrainCircuit, BarChart3, Lightbulb, Eye, Shuffle, TriangleAlert, Activity, MessageSquare, Coins } from 'lucide-react';
 import i18n from '@root/i18n';
 import { pluginUrl, apiUrl, restUrl, getRestNonce } from '@app/settings';
 import { useQuery } from '@tanstack/react-query';
@@ -20,6 +20,7 @@ import { appStoreUrl, playStoreUrl, useWorkspacePairing } from '@app/helpers/wor
 import { PairingNotices, PairingCode } from '@app/components/WorkspaceMobile';
 import UsageWidget from '@app/components/UsageWidget';
 import DashboardWelcome from '@app/components/DashboardWelcome';
+import StatTiles from '@app/components/StatTiles';
 import { settingsUrl } from '@app/helpers/adminNavigation';
 import useUsageSummary from '@app/helpers/useUsageSummary';
 
@@ -201,9 +202,6 @@ const Card = Styled.section`
     .card-foot { display: none; }
   }
 
-  .inline-stats { display: flex; gap: 22px; flex-wrap: wrap; }
-  .inline-stats span { display: inline-flex; align-items: baseline; gap: 6px; font-size: 12.5px; color: #6b7280; }
-  .inline-stats strong { font-size: 26px; font-weight: 700; color: #1f2937; line-height: 1; font-variant-numeric: tabular-nums; }
   .mcp-changes { display: flex; flex-direction: column; gap: 7px; font-size: 12.5px; }
   .mcp-changes div { display: flex; justify-content: space-between; gap: 10px; min-width: 0; }
   .mcp-changes a, .mcp-changes b { font-weight: 600; color: #1f2937; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -214,12 +212,6 @@ const Card = Styled.section`
   .mcp-spark { margin-top: auto; padding-top: 14px; min-height: 60px; }
   .spark.mcp-spark i:not(.empty) { background: #f97316; }
 
-  .week { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  .stat strong { display: block; font-size: 32px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; color: #1f2937; }
-  .stat span { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: #6b7280; }
-  .stat.right { text-align: right; }
-  .stat.right strong { font-size: 20px; }
-  .stat.right span { justify-content: flex-end; }
   .delta { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 999px; font-variant-numeric: tabular-nums; }
   .delta.up { background: #dcfce7; color: #15803d; }
   .delta.down { background: #fee2e2; color: #b91c1c; }
@@ -503,10 +495,10 @@ const AssistantsCard = () => {
             <span>{createInterpolateElement( __( 'Let Claude or ChatGPT work on this site. <b>Connect one →</b>', 'ai-engine' ), { b: <b /> } )}</span>
           </a>
         ) : <>
-          <div className="inline-stats">
-            <span><strong>{apps.length}</strong>{_n( 'connection', 'connections', apps.length, 'ai-engine' )}</span>
-            <span><strong>{calls}</strong>{_n( 'call', 'calls', calls, 'ai-engine' )}</span>
-          </div>
+          <StatTiles items={[
+            { icon: Plug, tone: 'orange', value: apps.length, label: _n( 'connection', 'connections', apps.length, 'ai-engine' ) },
+            { icon: Activity, tone: 'blue', value: calls, label: _n( 'tool call', 'tool calls', calls, 'ai-engine' ) },
+          ]} />
           <div className="section-gap" style={{ height: 12 }} />
           <p className="section-label"><span>{__( 'Latest changes', 'ai-engine' )}</span></p>
           <div className="mcp-changes">
@@ -543,23 +535,15 @@ const WeekCard = ({ options }) => {
       <div className="card-body">
         {!hasData && <p className="env-empty">{__( 'No AI activity yet. The first conversation shows up here.', 'ai-engine' )}</p>}
         {hasData && <>
-          <div className="week">
-            <div className="stat">
-              <strong>{Math.round(week.queries).toLocaleString()}</strong>
-              <span>
-                {_n( 'query', 'queries', Math.round(week.queries), 'ai-engine' )}
-                {delta !== null && delta !== 0 && (
-                  <em className={`delta ${delta > 0 ? 'up' : 'down'}`} style={{ fontStyle: 'normal' }}>
-                    {delta > 0 ? '↑' : '↓'} {Math.abs(delta)}%
-                  </em>
-                )}
-              </span>
-            </div>
-            <div className="stat right">
-              <strong>{money(week.price)}</strong>
-              <span>{__( 'estimated cost', 'ai-engine' )}</span>
-            </div>
-          </div>
+          <StatTiles items={[
+            { icon: MessageSquare, tone: 'blue', value: Math.round(week.queries).toLocaleString(), label: _n( 'query', 'queries', Math.round(week.queries), 'ai-engine' ),
+              badge: delta !== null && delta !== 0 && (
+                <em className={`delta ${delta > 0 ? 'up' : 'down'}`} style={{ fontStyle: 'normal' }}>
+                  {delta > 0 ? '↑' : '↓'} {Math.abs(delta)}%
+                </em>
+              ) },
+            { icon: Coins, tone: 'green', value: money(week.price), label: __( 'estimated cost', 'ai-engine' ) },
+          ]} />
           <div className="spark" role="img" aria-label={__( 'Queries per day over the last fourteen days', 'ai-engine' )}>
             {series.map((day, i) => {
               const cls = day.queries === 0 ? 'empty' : (i <= series.length - 7 ? 'prev' : '');
@@ -650,4 +634,21 @@ const SeoCard = ({ options }) => {
   const blocked = bots.filter(([, s]) => s === 'blocked').map(([ name ]) => name);
 
   const top = useMemo(() => {
-    const rows = {
+    const rows = {};
+    for (const row of (tiles.top_ai_bots?.available && tiles.top_ai_bots.list) || []) {
+      const company = botCompany(row.label);
+      rows[company] = (rows[company] || 0) + Number(row.value || 0);
+    }
+    return Object.entries(rows).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  }, [tiles.top_ai_bots]);
+  const others = visits !== null ? Math.max(0, visits - top.reduce((sum, [, v]) => sum + v, 0)) : 0;
+
+  const botNames = bots.map(([ name ]) => name).join(', ');
+  const [ exampleHidden, setExampleHidden ] = useState(() => {
+    try { return localStorage.getItem(VIS_HIDE_KEY) === '1'; }
+    catch (e) { return false; }
+  });
+  const hideExample = () => {
+    setExampleHidden(true);
+    try { localStorage.setItem(VIS_HIDE_KEY, '1'); }
+    catch (e) { /* Private
