@@ -1,14 +1,16 @@
-// Previous: 3.8.9
-// Current: 3.9.0
+// Previous: 3.9.0
+// Current: 3.9.1
 
 ```javascript
+// MCPConnectCard.js
+
 const { useState, useEffect, useRef, useCallback } = wp.element;
 const { sprintf, _n } = wp.i18n;
 import Styled from 'styled-components';
-import { Plug, Check, Copy, RefreshCw, ExternalLink, Shuffle } from 'lucide-react';
+import { Plug, Check, Copy, RefreshCw, ExternalLink, Shuffle, Brain, ChevronDown } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import i18n from '@root/i18n';
-import { userData, homeUrl } from '@app/settings';
+import { homeUrl } from '@app/settings';
 import { getNativeMcpGuide } from '@app/helpers/nativeGuides';
 
 const T = i18n.MCP_CONNECT;
@@ -72,18 +74,6 @@ const VERDICTS = {
   discovery_conflict: { title: T.V_CONFLICT_TITLE, summary: T.V_CONFLICT_SUMMARY },
 };
 
-const NEWS_URL = 'https://meowapps.com/wp-json/meowapps/v1/subscribe';
-const NEWS_DONE_KEY = 'mwai-news-optin-done';
-const PRIVACY_URL = 'https://meowapps.com/privacy-policy/';
-const newsAlreadyDone = () => {
-  try {
-    return !!localStorage.getItem(NEWS_DONE_KEY);
-  }
-  catch (e) {
-    return true;
-  }
-};
-
 const POLL_MS = 5000;
 const POLL_FOR_MS = 15 * 60 * 1000;
 
@@ -108,6 +98,8 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
   const [ copied, setCopied ] = useState(false);
   const [ copiedSupport, setCopiedSupport ] = useState(false);
   const [ copiedIdea, setCopiedIdea ] = useState(false);
+  const [ pairOpen, setPairOpen ] = useState(false);
+  const [ copiedPairTry, setCopiedPairTry ] = useState(false);
   const [ showDetails, setShowDetails ] = useState(false);
   const [ apps, setApps ] = useState(null);
   const [ watching, setWatching ] = useState(false);
@@ -115,32 +107,6 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
   const [ timedOut, setTimedOut ] = useState(false);
   const [ idea, setIdea ] = useState(0);
   const [ firstUse, setFirstUse ] = useState(false);
-  const [ newsOptIn, setNewsOptIn ] = useState(false);
-  const [ newsEmail, setNewsEmail ] = useState(userData?.email || '');
-  const [ newsState, setNewsState ] = useState(newsAlreadyDone() ? 'hidden' : 'idle');
-
-  const subscribe = async () => {
-    setNewsState('sending');
-    try {
-      const res = await fetch(NEWS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newsEmail.trim(), source: 'ai-engine-connect' }),
-      });
-      if (!res.ok) {
-        throw new Error(res.status);
-      }
-      setNewsState('done');
-      try {
-        localStorage.setItem(NEWS_DONE_KEY, '1');
-      }
-      catch (e) {
-      }
-    }
-    catch (e) {
-      setNewsState('error');
-    }
-  };
   const baselineRef = useRef(null);
 
   const host = (() => { try { return new URL(url).hostname.replace(/\./g, '-'); } catch (e) { return 'wordpress'; } })();
@@ -169,6 +135,7 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
         localStorage.setItem(TEST_CACHE_KEY, JSON.stringify({ at: Date.now(), result: selfTest }));
       }
       catch (e) {
+        // Private browsing
       }
     }
   }, [selfTest]);
@@ -295,14 +262,14 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
     setTimedOut(false);
   };
 
-  const ok = selfTest?.verdict === 'ok';
+  const ok = selfTest?.verdict == 'ok';
   const blocked = selfTest && VERDICTS[selfTest.verdict];
   const unknown = selfTest && !ok && !blocked;
   const viaToken = app.endsWith( '-token' );
   const steps = STEPS[app] || [];
   const tile = app.replace( /-(direct|token)$/, '' );
   const appName = APPS.find(a => a.id === tile)?.name;
-  const connectedName = connected?.client_name && connected.client_name != 'Unknown app' ? connected.client_name : T.YOUR_APP;
+  const connectedName = connected?.client_name && connected.client_name !== 'Unknown app' ? connected.client_name : T.YOUR_APP;
 
   return (
     <Card className={hideHero ? 'bare' : undefined}>
@@ -315,7 +282,7 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
       </div>}
 
       <div className="body">
-        <div className={`health ${selfTestBusy ? 'busy' : ok ? 'ok' : blocked ? 'bad' : 'unknown'}`} role="status" aria-live="polite">
+        {!connected && <div className={`health ${selfTestBusy ? 'busy' : ok ? 'ok' : blocked ? 'bad' : 'unknown'}`} role="status" aria-live="polite">
           {selfTestBusy ? <span className="spin" /> : ok ? <span className="okmark"><Check size={16} strokeWidth={3} /></span> : <span className="dot" />}
           <span className="label">
             {selfTestBusy && T.CHECKING}
@@ -327,9 +294,9 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
           {!selfTestBusy && (
             <button type="button" className="recheck" onClick={runSelfTest}><RefreshCw size={11} />{T.RECHECK}</button>
           )}
-        </div>
+        </div>}
 
-        {!selfTestBusy && blocked && (
+        {!connected && !selfTestBusy && blocked && (
           <div className="blocked">
             <p>{blocked.summary}</p>
             {showDetails && <p className="details">{selfTest.message}</p>}
@@ -354,17 +321,14 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
 
         {connected ? (
           <>
-            <div className="success" role="status" aria-live="polite">
-              <span className="check"><Check size={18} strokeWidth={3} /></span>
+            <div className={`success ${firstUse ? 'ok' : 'wait'}`} role="status" aria-live="polite">
+              <span className="check">{firstUse ? <Check size={20} strokeWidth={3} /> : <span className="spin" />}</span>
               <div>
                 <b>{sprintf(T.CONNECTED, connectedName)}</b>
-                <span>{sprintf(T.CONNECTED_AS, connected.user_display || connected.user_login)}</span>
+                <span>{firstUse
+                  ? sprintf(T.CONNECTED_READY, connected.user_display || connected.user_login)
+                  : sprintf(T.CONNECTED_WAIT, connected.user_display || connected.user_login, connectedName)}</span>
               </div>
-            </div>
-            <div className={`first ${firstUse ? 'ok' : 'wait'}`} role="status" aria-live="polite">
-              {firstUse
-                ? <><span className="check small"><Check size={12} strokeWidth={3} /></span>{sprintf(T.FIRST_USE_OK, connectedName)}</>
-                : <><span className="spin" />{sprintf(T.FIRST_USE_WAIT, connectedName)}</>}
             </div>
             <div className="try">
               <div>
@@ -382,35 +346,31 @@ const MCPConnectCard = ({ url, restUrl, nonce, selfTest, selfTestBusy, runSelfTe
               </button>
               </span>
             </div>
-            {newsState !== 'hidden' && (
-              <div className="news">
-                {newsState === 'done' ? (
-                  <span className="news-done"><Check size={12} strokeWidth={3} />{T.NEWS_DONE}</span>
-                ) : (
-                  <>
-                    <label className="news-check" htmlFor="mwai-news-optin">
-                      <input id="mwai-news-optin" type="checkbox" checked={newsOptIn}
-                        onChange={e => setNewsOptIn(e.target.checked)} />
-                      {T.NEWS_OPTIN}
-                    </label>
-                    {newsOptIn && (
-                      <div className="news-row">
-                        <input id="mwai-news-email" type="email" value={newsEmail} aria-label="Email"
-                          onChange={e => setNewsEmail(e.target.value)} />
-                        <button type="button" className="copy" disabled={newsState === 'sending' || !newsEmail.includes('@')}
-                          onClick={subscribe}>{T.NEWS_SEND}</button>
-                      </div>
-                    )}
-                    <span className="news-note">
-                      {newsState === 'error' ? T.NEWS_ERROR : T.NEWS_NOTE}{' '}
-                      <a href={PRIVACY_URL} target="_blank" rel="noreferrer">{T.NEWS_PRIVACY} ↗</a>
-                    </span>
-                  </>
-                )}
+            <div className={`pair${pairOpen ? ' open' : ''}`}>
+              <button type="button" className="pair-head" aria-expanded={pairOpen} onClick={() => setPairOpen(!pairOpen)}>
+                <span className="pair-icon"><Brain size={18} /></span>
+                <span className="pair-titles">
+                  <b>{T.PAIR_TITLE}</b>
+                  <span>{T.PAIR_SUBTITLE}</span>
+                </span>
+                <ChevronDown size={16} className="pair-chevron" />
+              </button>
+              {pairOpen && (
+                <div className="pair-body">
+                  <p>{T.PAIR_TEXT}</p>
+                  <a href="https://mcpforwp.com/" target="_blank" rel="noreferrer">{T.PAIR_LINK} ↗</a>
+                </div>
+              )}
+            </div>
+            <div className="try try-pair">
+              <div>
+                <div className="k">{T.TRY_ASKING}</div>
+                <div className="q">{T.PAIR_TRY}</div>
               </div>
-            )}
-            <div className="links">
-              <button type="button" onClick={reset}>{T.CONNECT_ANOTHER}</button>
+              <button type="button" className="shuffle" title={T.COPY} aria-label={T.COPY}
+                onClick={() => copy(T.PAIR_TRY, setCopiedPairTry)}>
+                {copiedPairTry ? <Check size={14} strokeWidth={3} /> : <Copy size={14} />}
+              </button>
             </div>
           </>
         ) : (
@@ -571,24 +531,36 @@ const Card = Styled.div`
   @keyframes mwai-connect-spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 
-  .success { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; }
-  .check { width: 36px; height: 36px; border-radius: 50%; flex: none; display: grid; place-items: center; background: #22c55e; color: #fff; box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.15); }
-  .success b { display: block; font-size: 14px; color: #14532d; }
+  .success { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 12px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%); border: 1px solid #bbf7d0; transition: background .3s ease, border-color .3s ease; }
+  .success.wait { background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border-color: #c7d6fb; }
+  .check { width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center; background: #22c55e; color: #fff; box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.15); }
+  .success.wait .check { background: #fff; box-shadow: 0 0 0 6px rgba(43, 92, 207, 0.12); }
+  .success.wait .check .spin { width: 18px; height: 18px; border-width: 2.5px; }
+  .success b { display: block; font-size: 15px; color: #14532d; }
+  .success.wait b { color: #1e3a8a; }
   .success span { color: #3f6212; font-size: 12.5px; }
+  .success.wait span { color: #3b4a7a; }
   .try { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; background: #fafbfc; }
   .shuffle { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; color: #2b5ccf; }
   .shuffle:hover { border-color: #c7d6fb; background: #f4f7ff; }
   .shuffle:focus-visible { outline: 2px solid #2b5ccf; outline-offset: 2px; }
   .try .k { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b7280; }
   .try .q { margin-top: 3px; color: #111827; font-weight: 600; }
-  .news { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid #f1f4f9; }
-  .news-check { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #111827; cursor: pointer; }
-  .news-row { display: flex; gap: 8px; }
-  .news-row input { flex: 1; min-width: 0; height: 30px; border: 1.5px solid #e5e7eb; border-radius: 7px; padding: 0 10px; font: inherit; }
-  .news-note { color: #6b7280; font-size: 12px; }
-  .news-note a { color: #2b5ccf; text-decoration: none; }
-  .news-note a:hover { text-decoration: underline; }
-  .news-done { display: inline-flex; align-items: center; gap: 6px; color: #166534; font-weight: 600; }
+  .pair { border: 1px solid #e9d5ff; border-radius: 10px; background: linear-gradient(135deg, #faf5ff 0%, #eef4ff 100%); }
+  .pair-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 0; background: none; cursor: pointer; text-align: left; font: inherit; }
+  .pair-icon { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: #7c3aed; color: #fff; }
+  .pair-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .pair-titles b { color: #111827; font-size: 13.5px; }
+  .pair-titles span { color: #6b7280; font-size: 12.5px; }
+  .pair-chevron { flex: none; color: #7c3aed; transition: transform .15s ease; }
+  .pair.open .pair-chevron { transform: rotate(180deg); }
+  .pair-body { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 12px 56px; }
+  .pair-body p { margin: 0; color: #4b5563; font-size: 12.5px; line-height: 1.5; white-space: normal; overflow-wrap: anywhere; }
+  .try > div { flex: 1; min-width: 0; }
+  .try-pair .q { line-height: 1.45; white-space: normal; overflow-wrap: anywhere; }
+  .pair-body a { color: #6d28d9; font-weight: 600; text-decoration: none; align-self: flex-start; font-size: 12.5px; }
+  .pair-body a:hover { text-decoration: underline; }
   .note { margin: 0; color: #4b5563; font-size: 12.5px; }
   .routes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .route { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 9px 11px; border-radius: 10px; cursor: pointer;

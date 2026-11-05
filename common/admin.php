@@ -496,6 +496,12 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
     }
 
     public function admin_notices_licensed_free() {
+      // Pro-only add-ons (mwai-*) have no premium/ folder, so isPro is false although they ARE the
+      // paid plugin. Their licenser is loaded, which never happens in a free build. Without this,
+      // Notifications 0.2.0 offered paying customers a "Remove the license" button (11-03).
+      if ( class_exists( 'MeowKitPro_MWAI_Licenser', false ) ) {
+        return;
+      }
       // Verify the nonce before removing the license from a POST request (CSRF protection).
       if ( isset( $_POST[$this->prefix . '_reset_sub'] )
         && isset( $_POST[ $this->prefix . '_reset_sub_nonce' ] )

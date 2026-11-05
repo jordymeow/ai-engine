@@ -7,9 +7,12 @@
 // an administrator opens wp-admin. Old ones are thinned into a ladder (today, yesterday, two
 // days, about a week, two weeks, a month, two months, three months), so about eight are kept.
 // Each snapshot is its own option with autoload off: they never weigh on normal page loads.
+// Snapshots hold every API key in plain text, so a site can turn them off (Maintenance, "Disable"),
+// which also deletes the existing ones (HS 32617).
 class Meow_MWAI_Services_SettingsBackups {
   public const INDEX = 'mwai_settings_backups';
   public const PREFIX = 'mwai_settings_backup_';
+  public const DISABLED = 'mwai_settings_backups_off';
   public const OPTIONS = [ 'mwai_options', 'mwai_chatbots', 'mwai_themes' ];
   public const MIN_GAP = 20 * HOUR_IN_SECONDS;
   // Upper bound of each age bucket, in days. One snapshot, the oldest, is kept per bucket.
@@ -37,7 +40,27 @@ class Meow_MWAI_Services_SettingsBackups {
     return $out;
   }
 
+  public function enabled(): bool {
+    return !get_option( self::DISABLED, false );
+  }
+
+  public function set_enabled( bool $enabled ) {
+    if ( $enabled ) {
+      delete_option( self::DISABLED );
+      return;
+    }
+    update_option( self::DISABLED, true, false );
+    $index = get_option( self::INDEX, [] );
+    foreach ( array_keys( is_array( $index ) ? $index : [] ) as $time ) {
+      delete_option( self::PREFIX . $time );
+    }
+    delete_option( self::INDEX );
+  }
+
   public function maybe_snapshot( string $reason ) {
+    if ( !$this->enabled() ) {
+      return false;
+    }
     $index = get_option( self::INDEX, [] );
     $latest = is_array( $index ) && $index ? max( array_keys( $index ) ) : 0;
     if ( time() - $latest < self::MIN_GAP ) {

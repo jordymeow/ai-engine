@@ -938,18 +938,10 @@ i18n.MCP_CONNECT = {
   CONNECTED: __( '%s is connected', 'ai-engine' ),
   YOUR_APP: __( 'Your assistant', 'ai-engine' ),
   /* translators: %s: the WordPress user the assistant connected as */
-  CONNECTED_AS: __( 'As %s, just now.', 'ai-engine' ),
-  /* translators: %s: the assistant that just connected, like Claude */
-  FIRST_USE_WAIT: __( 'Waiting for %s to reach your site…', 'ai-engine' ),
-  /* translators: %s: the assistant that just connected, like Claude */
-  FIRST_USE_OK: __( '%s reached your site and loaded its tools.', 'ai-engine' ),
+  CONNECTED_READY: __( 'As %s, just now. Its tools are loaded.', 'ai-engine' ),
+  /* translators: 1: the WordPress user the assistant connected as, 2: the assistant, like Claude */
+  CONNECTED_WAIT: __( 'As %1$s, just now. Waiting for %2$s\'s first call…', 'ai-engine' ),
   TRY_ASKING: __( 'Try asking it', 'ai-engine' ),
-  NEWS_OPTIN: __( 'Keep me posted on Meow Apps news (rare)', 'ai-engine' ),
-  NEWS_NOTE: __( 'We\'ll send one email to confirm. Your address stays with Meow Apps, used only for this, and you can unsubscribe in one click.', 'ai-engine' ),
-  NEWS_PRIVACY: __( 'Privacy policy', 'ai-engine' ),
-  NEWS_SEND: __( 'Subscribe', 'ai-engine' ),
-  NEWS_DONE: __( 'Check your inbox to confirm.', 'ai-engine' ),
-  NEWS_ERROR: __( 'That did not work. Please try again later.', 'ai-engine' ),
   // Read-only on purpose: the first thing someone asks should not change their site.
   TRY_QUESTIONS: [
     // First, and the same words as Torii's success page and the tour_my_site prompt.
@@ -964,7 +956,12 @@ i18n.MCP_CONNECT = {
     __( 'Suggest three post ideas based on what I have written.', 'ai-engine' ),
   ],
   ANOTHER_IDEA: __( 'Another idea', 'ai-engine' ),
-  CONNECT_ANOTHER: __( 'Connect another one', 'ai-engine' ),
+  // MCP for WP is Meow Apps' free, read-only knowledge server: it never touches the site.
+  PAIR_TITLE: __( 'Are you using MCP for WP in your agent?', 'ai-engine' ),
+  PAIR_SUBTITLE: __( 'It\'s free, and adds WordPress knowledge to your agent: smarter, faster, better at everything WordPress.', 'ai-engine' ),
+  PAIR_TEXT: __( 'A free MCP server you add in seconds, no account needed. It brings up-to-date knowledge about everything WordPress: security, plugins, coding, page builders and more. Your agent gets what it lacks, or would spend lots of tokens and time to find.', 'ai-engine' ),
+  PAIR_TRY: __( 'Use MCP for WP to give my site a quick health check: security, updates and anything that looks wrong. Then tell me what to fix first.', 'ai-engine' ),
+  PAIR_LINK: __( 'Learn more', 'ai-engine' ),
   NO_CONNECTION: __( 'Nothing connected yet', 'ai-engine' ),
   CLAUDE_DIR_ADD: __( 'Add AI Engine from Claude\'s directory', 'ai-engine' ),
   CLAUDE_DIR_LINK: __( 'Open the directory', 'ai-engine' ),

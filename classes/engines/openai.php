@@ -379,8 +379,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         }
       }
 
-      // Handle reasoning parameter only for models that support it
-      if ( !$isPromptMode && !empty( $query->reasoning ) ) {
+      // Handle reasoning parameter only for models that support it.
+      // OpenAI passes the reasoning effort on to the image_generation tool as its "complexity",
+      // and every image model refuses every value ("Complexity 'low' is not supported for this
+      // image model"), so a chatbot with the image tool failed on any message. Tested 2026-11-05
+      // with none to high, on gpt-image-2.5 too. Without reasoning, the request works.
+      $hasImageTool = !empty( $query->tools ) && in_array( 'image_generation', (array) $query->tools, true );
+      if ( !$isPromptMode && !empty( $query->reasoning ) && !$hasImageTool ) {
         // Check if the model has the 'reasoning' tag
         $modelInfo = $this->retrieve_model_info( $query->model );
         if ( $modelInfo && !empty( $modelInfo['tags'] ) && in_array( 'reasoning', $modelInfo['tags'] ) ) {

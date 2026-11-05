@@ -880,6 +880,7 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
     // Special cases for specific models that need manual handling
     $special_names = [
       'nano-banana-pro-preview' => 'Nano Banana Pro',
+      'gemini-nano-banana-2.1' => 'Nano Banana 2.1',
       'gemini-3.1-pro-preview-customtools' => 'Gemini 3.1 Pro (Custom Tools)',
       'gemini-live-2.5-flash-preview' => 'Gemini 2.5 Flash Live',
       'gemini-2.0-flash-live-001' => 'Gemini 2.0 Flash Live',
@@ -1364,6 +1365,22 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
             $priceIn = 0;
             $priceOut = 0.03; // $0.03 per image
           }
+        }
+        else if ( strpos( $model_id, 'nano-banana-2.1' ) !== false ) {
+          // Nano Banana 2.1, per Google's pricing page (2026-11): $1.50 per 1M input tokens and
+          // $30 per 1M output tokens, about $0.034 / $0.050 / $0.113 per 1K / 2K / 4K image.
+          $model['unit'] = 1 / 1000000;
+          $model['mode'] = 'image';
+          $priceIn = 1.50;
+          $priceOut = 30.00;
+        }
+        else if ( preg_match( '/3\.1-flash-image/', $model_id ) ) {
+          // Nano Banana 2 (Gemini 3.1 Flash Image), per Google's pricing page (2026-11): $0.50 in,
+          // $60 per 1M output tokens. It was billed like 2.5 Flash Image, about half its real cost.
+          $model['unit'] = 1 / 1000000;
+          $model['mode'] = 'image';
+          $priceIn = 0.50;
+          $priceOut = 60.00;
         }
         else if ( preg_match( '/flash-image/', $model_id ) ) {
           // Gemini Flash Image: token-based pricing

@@ -121,6 +121,11 @@ class Meow_MWAI_Rest {
         'permission_callback' => [ $this->core, 'can_access_settings' ],
         'callback' => [ $this, 'rest_settings_backups' ],
       ] );
+      register_rest_route( $this->namespace, '/settings/backups/enabled', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_settings_backups_enabled' ],
+      ] );
       register_rest_route( $this->namespace, '/settings/backups/restore', [
         'methods' => 'POST',
         'permission_callback' => [ $this->core, 'can_access_settings' ],
@@ -758,7 +763,13 @@ class Meow_MWAI_Rest {
   }
 
   public function rest_settings_backups() {
-    return $this->create_rest_response( [ 'success' => true, 'backups' => $this->core->settingsBackups->list() ], 200 );
+    $backups = $this->core->settingsBackups;
+    return $this->create_rest_response( [ 'success' => true, 'enabled' => $backups->enabled(), 'backups' => $backups->list() ], 200 );
+  }
+
+  public function rest_settings_backups_enabled( $request ) {
+    $this->core->settingsBackups->set_enabled( !empty( $request->get_json_params()['enabled'] ) );
+    return $this->create_rest_response( [ 'success' => true, 'enabled' => $this->core->settingsBackups->enabled() ], 200 );
   }
 
   public function rest_settings_backups_restore( $request ) {
@@ -2293,6 +2304,9 @@ class Meow_MWAI_Rest {
           'reachable' => true,
           'status' => (int) wp_remote_retrieve_response_code( $response ),
           'content_type' => wp_remote_retrieve_header( $response, 'content-type' ),
+          // Cloudflare's bot challenge ("Just a moment...", Bot Fight Mode, AI agent policies).
+          'cloudflare_challenge' => wp_remote_retrieve_header( $response, 'cf-mitigated' ) === 'challenge'
+            || preg_match( '/Just a moment|cf-chl|challenge-platform/i', substr( (string) wp_remote_retrieve_body( $response ), 0, 4000 ) ) === 1,
         ];
       };
 
@@ -2423,6 +2437,17 @@ class Meow_MWAI_Rest {
       else if ( !$probe['reachable'] ) {
         $verdict = 'unreachable';
         $message = 'The loopback request could not reach the site at all (' . esc_html( $probe['error'] ) . '). Check that the site is publicly resolvable and that the server can reach itself over HTTPS.';
+      }
+      else if ( $probe['status'] === 200 && $post_probe['reachable'] && in_array( $post_probe['status'], [ 403, 406, 418, 429, 503 ], true ) ) {
+        // WordPress answers an unauthenticated POST with a JSON 401, so these mean something in front
+        // of it refuses the MCP endpoint, for every client alike. That used to fall through to "ok",
+        // since the check above only compares python-httpx with the neutral client (HS 3503060469).
+        $verdict = 'mcp_endpoint_blocked';
+        $message = 'OAuth discovery works, but the MCP endpoint (/wp-json/mcp/v1/http) answers ' . $post_probe['status'] . ' instead of reaching WordPress, so assistants can sign in and then cannot use it. Something in front of WordPress blocks it: your CDN, firewall or a security plugin. ';
+        if ( !empty( $post_probe['cloudflare_challenge'] ) || !empty( $post_reference['cloudflare_challenge'] ) ) {
+          $message .= 'It is Cloudflare\'s bot challenge. In Cloudflare, add a WAF Skip rule for /wp-json/mcp/, /.well-known/oauth and URLs whose query contains rest_route=/mcp/, turn off Bot Fight Mode, and check Security > Bots for AI Crawler and Agent policies that block assistants. ';
+        }
+        $message .= 'See https://meowapps.com/fix-mcp-wordpress-connection for the full recipe.';
       }
       else if ( $probe['status'] === 200 && $post_blocked ) {
         $verdict = 'waf_blocks_python_post';

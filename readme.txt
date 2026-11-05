@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.9.0
+Stable tag: 3.9.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -170,8 +170,6 @@ The developer of AI Engine and related parties are not responsible for any issue
 
 AI Engine connects to the AI services you configure (OpenAI, Anthropic, Google and others) with your own API keys, only to run the features you use. See the Disclaimer above for their terms.
 
-When you connect an AI assistant in the MCP tab, the connection card can offer an optional "Keep me posted on Meow Apps news" box. Only if you tick it and click Subscribe, your email address is sent to meowapps.com (Meow Apps' newsletter, double opt-in, one-click unsubscribe). Nothing is sent otherwise. See the [Meow Apps privacy policy](https://meowapps.com/privacy-policy/).
-
 == Compatibility ==
 
 Please be aware that there may be conflicts with certain caching or performance plugins, such as SiteGround Optimizer and Ninja Firewall. To prevent any issues, ensure that AI Engine is excluded from these plugins.
@@ -235,6 +233,19 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.9.1 (2026/11/05) =
+* Fix: Chatbots with image generation work again when a reasoning level is set.
+* Fix: Knowledge sync marks a post as failed when the model returns no vector, instead of crashing and leaving half-written rows.
+* Fix: Gemini 3.1 Flash Image is billed at its real price instead of half.
+* Update: Turning Insights off now warns that the usage limits stop applying, since Insights is what enforces them.
+* Add: MCP tools for WooCommerce Subscriptions: list and inspect subscriptions with their next payment dates and renewal orders, find overdue ones, and list failed renewals.
+* Add: The MCP token panel also shows the address with the token inside it, for apps that cannot send headers like Claude's custom connectors.
+* Add: Discreet Disable link in Maintenance to turn off automatic settings backups, which also deletes the existing ones since they hold the API keys.
+* Add: Nano Banana 2.1 is listed under its own name with Google's prices.
+* Update: After connecting an assistant, the Connect card shows a single status that turns green once the assistant reaches the site.
+* Update: The MCP Connection Test now turns red when the MCP endpoint is blocked for every client, and names Cloudflare's bot challenge when that is the cause.
+* Update: The Connection Test's Cloudflare advice now also allows the rest_route=/mcp/ query, which path-only rules missed.
 
 = 3.9.0 (2026/11/02) =
 * Fix: Security: Image Studio now encodes the media ID in its requests, as extra hardening.

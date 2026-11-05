@@ -1,0 +1,159 @@
+{
+    "updated": "2026-11-02T01:17:20+00:00",
+    "plugins": {
+        "ai-engine": {
+            "name": "AI Engine Pro",
+            "from": 59,
+            "monthly": 4.92,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/ai-engine-pro/"
+        },
+        "code-engine": {
+            "name": "Code Engine Pro",
+            "from": 19,
+            "monthly": 1.58,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/code-engine-pro/"
+        },
+        "database-cleaner": {
+            "name": "Database Cleaner Pro",
+            "from": 39,
+            "monthly": 3.25,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/database-cleaner-pro/"
+        },
+        "gallery-custom-links": {
+            "name": "Gallery Custom Links Pro",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/gallery-custom-links-pro/"
+        },
+        "media-cleaner": {
+            "name": "Media Cleaner Pro",
+            "from": 39,
+            "monthly": 3.25,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/media-cleaner-pro/"
+        },
+        "media-file-renamer": {
+            "name": "Media File Renamer Pro",
+            "from": 39,
+            "monthly": 3.25,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/media-file-renamer-pro/"
+        },
+        "meow-gallery": {
+            "name": "Meow Gallery Pro",
+            "from": 29,
+            "monthly": 2.42,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/meow-gallery-pro/"
+        },
+        "meow-lightbox": {
+            "name": "Meow Lightbox Pro",
+            "from": 19,
+            "monthly": 1.58,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/meow-lightbox-pro/"
+        },
+        "mwai-better-links": {
+            "name": "Better Links",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/mwai-better-links/"
+        },
+        "mwai-content-parser": {
+            "name": "Content Parser",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/mwai-content-parser/"
+        },
+        "mwai-deepseek": {
+            "name": "DeepSeek",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/deepseek/"
+        },
+        "mwai-dynamic-keys": {
+            "name": "Dynamic Keys",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/mwai-dynamic-keys/"
+        },
+        "mwai-notifications": {
+            "name": "Notifications",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/mwai-notifications/"
+        },
+        "mwai-ollama": {
+            "name": "Ollama",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/mwai-ollama/"
+        },
+        "mwai-quick-actions": {
+            "name": "Quick Actions",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/mwai-quick-actions/"
+        },
+        "mwai-user-memory": {
+            "name": "User Memory",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/mwai-user-memory/"
+        },
+        "mwai-visitor-form": {
+            "name": "Visitor Form",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/mwai-visitor-form/"
+        },
+        "mwai-websearch": {
+            "name": "Web Search",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/mwai-websearch/"
+        },
+        "mwai-woo-basics": {
+            "name": "Woo Basics",
+            "from": 9,
+            "monthly": 0.75,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/mwai-woo-basics/"
+        },
+        "seo-engine": {
+            "name": "SEO Engine Pro",
+            "from": 19,
+            "monthly": 1.58,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/seo-engine-pro/"
+        },
+        "social-engine": {
+            "name": "Social Engine Pro",
+            "from": 29,
+            "monthly": 2.42,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/social-engine-pro/"
+        },
+        "wp-retina-2x": {
+            "name": "Perfect Images Pro",
+            "from": 39,
+            "monthly": 3.25,
+            "currency": "USD",
+            "url": "https://meowapps.com/products/wp-retina-2x-pro/"
+        }
+    }
+}
