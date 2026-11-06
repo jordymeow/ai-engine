@@ -465,6 +465,10 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
       'api_url' => get_rest_url( null, 'mwai/v1' ),
       'rest_url' => get_rest_url(),
       'home_url' => home_url(),
+      // Cloudflare adds CF-Ray to every request it proxies. Its bot challenge is the most common
+      // reason Claude or ChatGPT cannot connect, and the Connection Test, run from the site itself,
+      // often bypasses Cloudflare, so the MCP tab shows a hint whenever the site is behind it.
+      'behind_cloudflare' => !empty( $_SERVER['HTTP_CF_RAY'] ),
       'plugin_url' => MWAI_URL,
       'user_data' => $this->core->get_user_data(),
       'prefix' => MWAI_PREFIX,

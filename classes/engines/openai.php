@@ -823,7 +823,64 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       $endpoint = 'https://' . $endpoint;
     }
 
-    return $endpoint;
+    // Users often paste a full API address (from Azure's portal or a curl example) instead of the
+    // resource URL; every path below is built from the resource URL, so keep only that part.
+    $endpoint = preg_replace( '/\?.*$/', '', $endpoint );
+    $endpoint = preg_replace( '#/openai/deployments/[^/]+/(chat/completions|embeddings|images/(generations|edits))$#', '', $endpoint );
+    $endpoint = preg_replace( '#/openai(/v1)?(/(responses|files))?$#', '', $endpoint );
+    $endpoint = preg_replace( '#/chat/completions$#', '', $endpoint );
+
+    return rtrim( $endpoint, '/' );
+  }
+
+  /**
+  * Azure has its own Files API address and key header. The shared upload_file() always posted to
+  * api.openai.com, so every document a chatbot sent on an Azure environment failed to upload
+  * (reported with a patch by Sumitomo Chemical, HS 3506730280). Azure also refuses the user_data
+  * purpose: files given to a model there use "assistants".
+  */
+  public function upload_file( $filename, $data, $purpose = 'fine-tune' ) {
+    if ( $this->envType !== 'azure' ) {
+      return parent::upload_file( $filename, $data, $purpose );
+    }
+    if ( $purpose === 'user_data' ) {
+      $purpose = 'assistants';
+    }
+    $boundary = wp_generate_password( 24, false );
+    $body = "--$boundary\r\n";
+    $body .= "Content-Disposition: form-data; name=\"purpose\"\r\n\r\n";
+    $body .= $purpose . "\r\n";
+    $body .= "--$boundary\r\n";
+    $body .= "Content-Disposition: form-data; name=\"file\"; filename=\"{$filename}\"\r\n";
+    $body .= "Content-Type: application/octet-stream\r\n\r\n";
+    $body .= $data . "\r\n";
+    $body .= "--$boundary--\r\n";
+
+    // Same as the parent: streaming hooks on http_api_curl break a multipart upload.
+    global $wp_filter;
+    $saved_hooks = $wp_filter['http_api_curl'] ?? null;
+    unset( $wp_filter['http_api_curl'] );
+    $response = wp_remote_post( $this->build_azure_v1_url( $this->get_azure_endpoint(), '/files' ), [
+      'headers' => [
+        'api-key' => $this->apiKey,
+        'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+      ],
+      'body' => $body,
+      'timeout' => 60,
+      'sslverify' => MWAI_SSL_VERIFY,
+    ] );
+    if ( $saved_hooks !== null ) {
+      $wp_filter['http_api_curl'] = $saved_hooks;
+    }
+    if ( is_wp_error( $response ) ) {
+      throw new Exception( 'File upload failed: ' . $response->get_error_message() );
+    }
+    $decoded = json_decode( wp_remote_retrieve_body( $response ), true );
+    if ( wp_remote_retrieve_response_code( $response ) >= 400 ) {
+      $message = $decoded['error']['message'] ?? wp_remote_retrieve_body( $response );
+      throw new Exception( 'Azure file upload failed: ' . $message );
+    }
+    return $decoded;
   }
 
   /**
@@ -2885,6 +2942,12 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       // Skip images - they're sent as base64/URL, not uploaded to Files API
       if ( $isImage ) {
         continue;
+      }
+
+      // Azure's Responses API reads only PDFs from uploaded files; Word, Excel and other
+      // documents need Code Interpreter there. Say so instead of failing later with a 400.
+      if ( $this->envType === 'azure' && $mimeType !== 'application/pdf' && $file->get_type() !== 'provider_file_id' ) {
+        throw new Exception( sprintf( 'The file %s cannot be sent to Azure OpenAI: Azure only accepts PDF documents here (and images).', $file->get_filename() ) );
       }
 
       if ( $file->get_type() !== 'provider_file_id' ) {

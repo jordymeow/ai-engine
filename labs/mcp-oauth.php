@@ -100,6 +100,14 @@ class Meow_MWAI_Labs_MCP_OAuth {
       }
       $this->emit_json( $this->authorization_server_metadata() );
     }
+    // Only the form carrying our own issuer path: a bare /.well-known/openid-configuration may
+    // belong to an SSO or OpenID provider plugin on the site, and answering it would break it.
+    if ( strpos( $path, '/.well-known/openid-configuration/' ) === 0 && strpos( $path, '/' . $this->namespace ) !== false ) {
+      if ( $this->logging ) {
+        error_log( '[AI Engine MCP OAuth] Host-root OIDC hit: ' . $path );
+      }
+      $this->emit_json( $this->openid_configuration() );
+    }
   }
 
   /**
@@ -267,6 +275,22 @@ class Meow_MWAI_Labs_MCP_OAuth {
       'permission_callback' => '__return_true',
     ] );
 
+    // OpenID Connect Discovery, appended to the issuer path. Claude tries the host-root
+    // /.well-known/ forms first, then this one. Managed hosts like SiteGround serve their own
+    // 404 for anything under the host-root /.well-known/ and never reach WordPress, so without
+    // this route Claude found no metadata and failed with "Couldn't register with ... sign-in
+    // service" (HS 3506632298, 2026-11-06). The nested path does reach WordPress there.
+    register_rest_route( $this->namespace, '/.well-known/openid-configuration', [
+      'methods' => 'GET',
+      'callback' => [ $this, 'handle_openid_configuration' ],
+      'permission_callback' => '__return_true',
+    ] );
+    register_rest_route( $this->namespace, '/oauth/jwks', [
+      'methods' => 'GET',
+      'callback' => [ $this, 'handle_jwks' ],
+      'permission_callback' => '__return_true',
+    ] );
+
     // RFC 7591 — Dynamic Client Registration
     register_rest_route( $this->namespace, '/oauth/register', [
       'methods' => 'POST',
@@ -331,6 +355,25 @@ class Meow_MWAI_Labs_MCP_OAuth {
 
   public function handle_as_metadata() {
     return new WP_REST_Response( $this->authorization_server_metadata(), 200 );
+  }
+
+  public function handle_openid_configuration() {
+    return new WP_REST_Response( $this->openid_configuration(), 200 );
+  }
+
+  // No ID tokens are issued (the mcp scope is plain OAuth), so there are no keys to publish.
+  public function handle_jwks() {
+    return new WP_REST_Response( [ 'keys' => [] ], 200 );
+  }
+
+  // The OAuth metadata plus the fields OIDC discovery documents must carry, so clients that
+  // validate this URL strictly against the OpenID schema still accept it.
+  private function openid_configuration() {
+    return array_merge( $this->authorization_server_metadata(), [
+      'jwks_uri' => rest_url( $this->namespace . '/oauth/jwks' ),
+      'subject_types_supported' => [ 'public' ],
+      'id_token_signing_alg_values_supported' => [ 'RS256' ],
+    ] );
   }
   #endregion
 

@@ -378,6 +378,36 @@ class Meow_MWAI_Modules_Files {
     return $refId;
   }
 
+  /**
+  * The type a file's CONTENT supports, as [ 'ext' => ..., 'type' => ... ], or null when it does not
+  * match its name. Checking the name alone let HTML named x.flac be stored in the public uploads
+  * folder, where servers that don't map .flac serve it untyped and browsers run it (stored XSS,
+  * Patchstack 38706). WordPress already compares the content with the extension; it only rejects
+  * real audio whose detected type is a variant it doesn't list (audio/x-m4a for .m4a...), so those
+  * pass when finfo sees audio or video.
+  */
+  public function check_file_content( $path, $filename ) {
+    require_once( ABSPATH . 'wp-admin/includes/file.php' );
+    $check = wp_check_filetype_and_ext( $path, $filename );
+    if ( !empty( $check['type'] ) ) {
+      return [ 'ext' => $check['ext'], 'type' => $check['type'] ];
+    }
+    $ext = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
+    if ( !in_array( $ext, [ 'flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm' ], true ) ) {
+      return null;
+    }
+    $realMime = '';
+    if ( function_exists( 'finfo_open' ) ) {
+      $finfo = finfo_open( FILEINFO_MIME_TYPE );
+      $realMime = $finfo ? (string) finfo_file( $finfo, $path ) : '';
+      if ( $finfo ) {
+        finfo_close( $finfo );
+      }
+    }
+    $isMedia = strpos( $realMime, 'audio/' ) === 0 || strpos( $realMime, 'video/' ) === 0 || $realMime === 'application/ogg';
+    return $isMedia ? [ 'ext' => $ext, 'type' => 'audio/' . $ext ] : null;
+  }
+
   public function upload_file(
     $path,
     $filename = null,
@@ -435,6 +465,12 @@ class Meow_MWAI_Modules_Files {
       }
       if ( !copy( $path, $destination ) ) {
         throw new Exception( 'Could not move the file.' );
+      }
+      // Checked on the stored copy, so every caller is covered (chat and form uploads, the Public
+      // API, generated images that arrive as a URL). The library target is checked by WordPress.
+      if ( !$this->check_file_content( $destination, $filename ) ) {
+        wp_delete_file( $destination );
+        throw new Exception( 'File type is not allowed.' );
       }
       $url = wp_upload_dir()['url'] . '/' . $unique_filename;
 
@@ -872,31 +908,15 @@ class Meow_MWAI_Modules_Files {
       ];
       return new WP_REST_Response( [ 'success' => false, 'message' => $reasons[ $upload_error ] ?? 'The upload failed.' ], 400 );
     }
-    $purpose = empty( $_POST['purpose'] ) ? null : $_POST['purpose'];
+    $purpose = empty( $_POST['purpose'] ) ? null : sanitize_text_field( wp_unslash( $_POST['purpose'] ) );
     $metadata = empty( $_POST['metadata'] ) ? null : json_decode( $_POST['metadata'], true );
-    $envId = empty( $_POST['envId'] ) ? null : $_POST['envId'];
+    $envId = empty( $_POST['envId'] ) ? null : sanitize_text_field( wp_unslash( $_POST['envId'] ) );
     if ( !$purpose ) {
       return new WP_REST_Response( [ 'success' => false, 'message' => 'Purpose is required.' ], 400 );
     }
-    // Validate file type - allow audio files for transcription purpose
-    $fileTypeCheck = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'] );
-
-    // If WordPress doesn't recognize the type, check if it's an audio file for transcription
-    if ( !$fileTypeCheck['type'] ) {
-      // Get file extension
-      $ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
-
-      // Whisper supported formats: flac, m4a, mp3, mp4, mpeg, mpga, oga, ogg, wav, webm
-      $audioExtensions = [ 'flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm' ];
-
-      if ( in_array( $ext, $audioExtensions ) ) {
-        // This is a valid audio file for transcription - override the type check
-        $fileTypeCheck['type'] = 'audio/' . $ext;
-        $fileTypeCheck['ext'] = $ext;
-      }
-      else {
-        return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid file type.' ], 400 );
-      }
+    // The same content check upload_file() runs, early, so a refused file costs nothing.
+    if ( !$this->check_file_content( $file['tmp_name'], $file['name'] ) ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Invalid file type.' ], 400 );
     }
 
     // Guests can upload wherever a chatbot or form is shown, so cap them per visitor per hour,

@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.9.1
+Stable tag: 3.9.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,7 +58,9 @@ AI Engine turns your WordPress site into an intelligent MCP server. AI agents li
 
 **It asks before deleting.** New sites ask you before an assistant deletes anything (or, if you prefer, before any site change too): you approve it in one click in the MCP tab. Or keep assistants on drafts only, and publish yourself.
 
-Rather have it set up for you? [Connect with Meow Apps](https://connect.meowapps.com/?ref=wporg) adds your site to ChatGPT or Claude in a few clicks, through our gateway, which passes requests along without storing them.
+Rather have it set up for you? [Connect WP](https://connectwp.ai/?ref=wporg) by Meow Apps adds your site to ChatGPT or Claude in a few clicks: it signs you in on your own site, passes each request along, and stores nothing.
+
+Your agent can also add [Today WP](https://todaywp.com/?ref=ai-engine), a read-only MCP server by Meow Apps with current WordPress knowledge (versions, security releases, plugin facts and docs). AI Engine acts on your site, Today WP brings the knowledge.
 
 **What AI Agents Can Do:**
 
@@ -233,6 +235,13 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.9.2 (2026/11/06) =
+* Fix: Security: Uploads are now validated against their actual content and not only their filename, so HTML disguised as audio or another media type is refused in chat uploads, form uploads, the Public API and generated files (reported by peppa via Patchstack).
+* Add: Hint in the Connect card for sites behind Cloudflare, listing what to allow when Claude or ChatGPT can't connect, with a link to the full steps.
+* Fix: Documents sent to a chatbot on Azure OpenAI now upload to Azure itself, and PDFs work there.
+* Fix: A full API address pasted as the Azure endpoint is now trimmed to the resource URL.
+* Fix: Claude can now connect as a custom connector on hosts that answer /.well-known/ themselves, such as SiteGround.
 
 = 3.9.1 (2026/11/05) =
 * Fix: Chatbots with image generation work again when a reasoning level is set.
