@@ -23,7 +23,9 @@ class Meow_MWAI_Labs_MCP_Approvals {
   private const SITE_CHANGES = [ 'wp_update_option', 'wp_activate_plugin', 'wp_deactivate_plugin', 'wp_install_plugin',
     'wp_update_plugin', 'wp_install_theme', 'wp_update_theme', 'wp_switch_theme', 'wp_create_user', 'wp_update_user',
     'wp_plugin_put_file', 'wp_plugin_alter_file', 'wp_theme_put_file', 'wp_theme_alter_file', 'wp_db_query',
-    'wc_bulk_update_stock', 'wc_update_order_status', 'wc_create_refund' ];
+    'wc_bulk_update_stock', 'wc_update_order_status', 'wc_create_refund',
+    // AI Engine itself (Pro): what visitors' chatbots say, and Knowledge writes that can't be undone.
+    'mwai_create_chatbot', 'mwai_update_chatbot', 'mwai_update_settings', 'mwai_set_module', 'mwai_add_knowledge', 'mwai_update_knowledge' ];
 
   // Drafts only: tools that work on one post, and the argument naming it.
   private const POST_TOOLS = [ 'wp_update_post' => 'ID', 'wp_alter_post' => 'ID', 'wp_write_blocks' => 'ID',

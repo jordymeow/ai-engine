@@ -196,6 +196,11 @@ class Meow_MWAI_Core {
         new MeowPro_MWAI_MCP_Database( $this );
       }
 
+      // AI Engine - Pro MCP tools to manage AI Engine itself (chatbots, knowledge, settings...)
+      if ( $this->get_option( 'mcp_aiengine' ) && class_exists( 'MeowPro_MWAI_MCP_AIEngine' ) ) {
+        new MeowPro_MWAI_MCP_AIEngine( $this );
+      }
+
       // Polylang - Pro multilingual MCP tools (only if Polylang is active)
       if ( $this->get_option( 'mcp_polylang' ) && class_exists( 'MeowPro_MWAI_MCP_Polylang' ) && function_exists( 'pll_get_post_language' ) ) {
         new MeowPro_MWAI_MCP_Polylang( $this );
@@ -1609,6 +1614,78 @@ class Meow_MWAI_Core {
     return null;
   }
 
+  // Fingerprint of the chatbots as stored. The admin screen sends back the one it loaded, so a
+  // save based on an outdated list (an assistant changed a chatbot over MCP meanwhile, or another
+  // tab saved) is refused instead of silently undoing those changes.
+  public function get_chatbots_revision() {
+    $this->forget_cached_options( $this->chatbots_option_name );
+    wp_cache_delete( $this->chatbots_option_name, 'options' );
+    return md5( (string) wp_json_encode( get_option( $this->chatbots_option_name, [] ) ) );
+  }
+
+  // Saves ONE chatbot into a fresh read of the list, so a save stays small whatever the number of
+  // chatbots (Sandip's 237 made every full save 3.7 MB, refused by his server with a 413) and
+  // never touches the others. Actions: update (merge `changes` into the stored bot, so fields
+  // changed elsewhere meanwhile are kept), replace (the whole bot, for a reset), create, delete.
+  public function save_chatbot( $action, $botId, $data = [] ) {
+    $this->forget_cached_options( $this->chatbots_option_name );
+    wp_cache_delete( $this->chatbots_option_name, 'options' );
+    $list = get_option( $this->chatbots_option_name, [] );
+    if ( !is_array( $list ) || empty( $list ) ) {
+      $list = $this->get_chatbots();
+    }
+    $index = null;
+    foreach ( $list as $i => $bot ) {
+      if ( ( $bot['botId'] ?? '' ) === $botId ) {
+        $index = $i;
+        break;
+      }
+    }
+    $exists = fn( $id ) => !empty( array_filter( $list, fn( $b ) => ( $b['botId'] ?? '' ) === $id ) );
+    if ( $action === 'create' ) {
+      $bot = is_array( $data ) ? $data : [];
+      $botId = $bot['botId'] ?? '';
+      if ( $botId === '' || $exists( $botId ) ) {
+        throw new Exception( __( 'This chatbot ID is already in use or empty.', 'ai-engine' ) );
+      }
+      $list[] = $bot;
+    }
+    else if ( $index === null ) {
+      throw new Exception( __( 'This chatbot no longer exists. Reload the page to see the latest version.', 'ai-engine' ) );
+    }
+    else if ( $action === 'delete' ) {
+      if ( $botId === 'default' ) {
+        throw new Exception( __( 'The default chatbot cannot be deleted.', 'ai-engine' ) );
+      }
+      array_splice( $list, $index, 1 );
+      $botId = null;
+    }
+    else if ( $action === 'replace' ) {
+      $list[ $index ] = array_merge( is_array( $data ) ? $data : [], [ 'botId' => $botId ] );
+    }
+    else if ( $action === 'update' ) {
+      $changes = is_array( $data ) ? $data : [];
+      if ( isset( $changes['botId'] ) && $changes['botId'] !== $botId ) {
+        if ( $changes['botId'] === '' || $changes['botId'] === 'default' || $exists( $changes['botId'] ) ) {
+          throw new Exception( __( 'This chatbot ID is already in use or empty.', 'ai-engine' ) );
+        }
+        $botId = $changes['botId'];
+      }
+      $list[ $index ] = array_merge( $list[ $index ], $changes );
+    }
+    else {
+      throw new Exception( 'Unknown action.' );
+    }
+    $saved = $this->update_chatbots( array_values( $list ) );
+    $chatbot = null;
+    foreach ( $saved as $bot ) {
+      if ( $botId !== null && ( $bot['botId'] ?? '' ) === $botId ) {
+        $chatbot = $bot;
+      }
+    }
+    return [ 'chatbot' => $chatbot, 'botIds' => array_column( $saved, 'botId' ) ];
+  }
+
   public function update_chatbots( $chatbots ) {
     $htmlFields = [ 'instructions', 'textCompliance', 'aiName', 'userName', 'startSentence' ];
     $keepLineReturnsFields = [ 'instructions' ];
@@ -2313,7 +2390,7 @@ class Meow_MWAI_Core {
   // whole request, so a long request (a streaming reply, a Knowledge sync) re-read the copy it
   // loaded when it started, then saved it back with its usage stats: any setting changed in the
   // meantime was silently undone (a refreshed Gemini model list went from 33 back to 25).
-  private function forget_cached_options( $option_name = null ) {
+  public function forget_cached_options( $option_name = null ) {
     $option_name = $option_name ?? $this->option_name;
     wp_cache_delete( $option_name, 'options' );
     $alloptions = wp_cache_get( 'alloptions', 'options' );

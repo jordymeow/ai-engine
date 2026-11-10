@@ -2216,8 +2216,7 @@ body > textarea[aria-hidden=true][tabindex="-1"] {
   align-items: center;
   margin-left: auto;
 }
-.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button {
-  justify-content: center;
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button, .mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button {
   height: 32px;
   width: 32px;
   cursor: pointer;
@@ -2225,57 +2224,34 @@ body > textarea[aria-hidden=true][tabindex="-1"] {
   justify-content: center;
   align-items: center;
 }
-.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:before {
-  transition: all 0.2s ease-out;
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:before, .mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:before {
   content: " ";
-  cursor: pointer;
-  position: absolute;
-  height: 20px;
-  width: 20px;
+  width: 19px;
+  height: 19px;
   background-color: var(--mwai-headerColor);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M3 9V3h6'/%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M21 15v6h-6'/%3E%3Cpath d='M9 21H3v-6'/%3E%3C/svg%3E") no-repeat center/contain;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M3 9V3h6'/%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M21 15v6h-6'/%3E%3Cpath d='M9 21H3v-6'/%3E%3C/svg%3E") no-repeat center/contain;
+  opacity: 0.7;
+  transition: opacity 0.2s ease-out;
 }
-.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:hover:before {
-  width: 22px;
-  height: 22px;
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:hover:before, .mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:hover:before {
+  opacity: 1;
+}
+.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:before {
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M5 9.5V5h4.5M14.5 5H19v4.5M19 14.5V19h-4.5M9.5 19H5v-4.5'/%3E%3C/svg%3E") no-repeat center/contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M5 9.5V5h4.5M14.5 5H19v4.5M19 14.5V19h-4.5M9.5 19H5v-4.5'/%3E%3C/svg%3E") no-repeat center/contain;
 }
 .mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button {
-  justify-content: center;
-  height: 32px;
-  width: 32px;
-  cursor: pointer;
   border-radius: var(--mwai-borderRadius);
   margin-left: -10px;
+  margin-right: 6px;
 }
 .mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:before {
-  transition: all 0.2s ease-out;
-  transform: translate(16px, 5px) rotate(45deg);
-}
-.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:after {
-  transition: all 0.2s ease-out;
-  transform: translate(16px, 5px) rotate(-45deg);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M5 5l14 14M19 5L5 19'/%3E%3C/svg%3E") no-repeat center/contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M5 5l14 14M19 5L5 19'/%3E%3C/svg%3E") no-repeat center/contain;
 }
 .mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-resize-button:focus-visible, .mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:focus-visible {
   outline: 2px solid var(--mwai-headerColor);
   outline-offset: -7px;
   border-radius: 6px;
-}
-.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:before, .mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:after {
-  content: " ";
-  cursor: pointer;
-  position: absolute;
-  height: 22px;
-  width: 1.2px;
-  background-color: var(--mwai-headerColor);
-}
-.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:hover:before {
-  opacity: 1;
-  transform: translate(16px, 5px) rotate(135deg);
-}
-.mwai-timeless-theme.mwai-window .mwai-header .mwai-buttons .mwai-close-button:hover:after {
-  opacity: 1;
-  transform: translate(16px, 5px) rotate(45deg);
 }
 .mwai-timeless-theme.mwai-window.mwai-opening, .mwai-timeless-theme.mwai-window.mwai-closing {
   cursor: default !important;
@@ -2346,14 +2322,8 @@ body > textarea[aria-hidden=true][tabindex="-1"] {
   margin-bottom: 0px;
 }
 .mwai-timeless-theme.mwai-window.mwai-fullscreen .mwai-header .mwai-buttons .mwai-resize-button:before {
-  width: 20px;
-  height: 20px;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M8 3V8H3'/%3E%3Cpath d='M21 8H16V3'/%3E%3Cpath d='M3 16H8V21'/%3E%3Cpath d='M16 21V16H21'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M8 3V8H3'/%3E%3Cpath d='M21 8H16V3'/%3E%3Cpath d='M3 16H8V21'/%3E%3Cpath d='M16 21V16H21'/%3E%3C/svg%3E");
-}
-.mwai-timeless-theme.mwai-window.mwai-fullscreen .mwai-header .mwai-buttons .mwai-resize-button:hover:before {
-  width: 22px;
-  height: 22px;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M5 14h5v5M19 10h-5V5M10 14l-5 5M14 10l5-5'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cpath d='M5 14h5v5M19 10h-5V5M10 14l-5 5M14 10l5-5'/%3E%3C/svg%3E");
 }
 .mwai-timeless-theme.mwai-fullscreen:not(.mwai-window) {
   position: fixed;

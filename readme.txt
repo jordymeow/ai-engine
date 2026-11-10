@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.9.2
+Stable tag: 3.9.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,20 +65,19 @@ Your agent can also add [Today WP](https://todaywp.com/?ref=ai-engine), a read-o
 **What AI Agents Can Do:**
 
 * Create and edit posts, one block at a time
-* Edit pages built with Elementor, Beaver Builder, Divi, Avada, WPBakery or SiteOrigin
+* Edit pages built with Divi, Avada, WPBakery or SiteOrigin (Elementor and Beaver Builder with Pro)
 * Manage menus, CSS, site styles, and block theme headers, footers and templates
 * Write SEO titles and descriptions in Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework or Slim SEO
 * Fill in Advanced Custom Fields (ACF)
 * Check pages as visitors see them, read the error log, and restore earlier versions
 * Undo any change, by asking or with one click
 * Moderate comments, share draft previews, manage redirects, and read form entries
+* Manage media files
 * Install and manage plugins
 * Customize themes
-* Check SEO and analytics
-* Manage media files
 * Run SQL queries
 * Create images for your posts, in the shape you need
-* Manage WooCommerce products, variations, coupons, orders, inventory, and customers
+* Manage WooCommerce products, variations, coupons, orders, inventory, customers and subscriptions
 * Handle Polylang and WPML translations
 
 Step-by-step guides: [ChatGPT](https://meowapps.com/chatgpt-wordpress-mcp/), [Claude and Claude Code](https://meowapps.com/claude-code-wordpress-mcp/), [OpenClaw](https://meowapps.com/openclaw-wordpress-mcp/), and the [WordPress MCP FAQ](https://meowapps.com/wordpress-mcp-faq/). Developers will find every tool in the [MCP documentation](https://ai.thehiddendocs.com/mcp/).
@@ -123,7 +122,7 @@ A [PHP API](https://ai.thehiddendocs.com/php-functions/), a [REST API](https://a
 * **Editor Assistant**: An AI sidebar in the post editor that can read, rewrite, insert, and rearrange your content blocks through chained function calls.
 * **Realtime Audio**: Voice-based conversations on OpenAI's GA Realtime API, with the latest voice reasoning capabilities.
 * **Statistics & Usage Control**: Track usage, set limits per role, and monitor costs.
-* **Extra MCP Tools**: Adds plugin, theme, database, Polylang, WPML, and WooCommerce management to the MCP server.
+* **Extra MCP Tools**: Adds plugin, theme, database, WooCommerce (with Subscriptions), Elementor, Beaver Builder, Polylang and WPML management to the MCP server.
 * **Models API**: Let coding agents and OpenAI-compatible apps use your site's AI models with one key, with usage tracked in Insights.
 * **Priority Support**: Get faster help from the Meow Apps team.
 
@@ -235,6 +234,23 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.9.3 (2026/11/10) =
+* Add: GPT Image 2.6 Sunburst and Flare models.
+* Add: MCP now manage AI Engine itself: chatbots, discussions, insights, knowledge, settings and modules, with undo for chatbot and settings changes. MCP AI Engine tools can test a chatbot, read a knowledge entry in full, find entries by text or entries that lost their post, estimate costs, and keep removed content.
+* Add: MCP Database tools can list the tables, describe one, and show what WordPress loads on every page.
+* Add: Word, Excel, PowerPoint and other documents now work in chatbots on Azure OpenAI, read through Code Interpreter, while PDFs stay direct.
+* Update: MCP's Ask Before setting now also covers changes to AI Engine's chatbots, settings, modules and knowledge.
+* Update: The REST API settings only show when the Public API is enabled.
+* Update: The Chatbots screen no longer overwrites changes made elsewhere meanwhile, by an AI assistant or another tab, and asks to reload instead.
+* Update: The chatbot's close and full screen buttons are cleaner and match each other in every theme.
+* Update: When a save fails because the server's reply is broken, the message now says why: a Cloudflare block, a PHP warning from another plugin, or the error page.
+* Update: Admin tab switches are much faster.
+* Update: Synced the shared Meow Apps library to 5.3 with the latest NekoUI.
+* Fix: Saving a chatbot now sends only that chatbot, so large setups no longer hit the server's upload limit.
+* Fix: Importing settings works again after the chatbots were changed elsewhere since the page loaded.
+* Fix: Chatbot calls through the PHP API without a chatId are no longer saved as discussions.
+* Fix: The MCP chatbot read now shows instructions as the model reads them.
 
 = 3.9.2 (2026/11/06) =
 * Fix: Security: Uploads are now validated against their actual content and not only their filename, so HTML disguised as audio or another media type is refused in chat uploads, form uploads, the Public API and generated files (reported by peppa via Patchstack).

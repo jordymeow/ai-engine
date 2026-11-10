@@ -589,19 +589,20 @@ class Meow_MWAI_Labs_MCP_Core {
   // Secrets never leave the site through MCP: API keys, tokens and passwords are masked in
   // wp_get_option results. Matched on the option name or on the array key holding the value
   // ("token" but not "max_tokens"). An agent writing a masked value back would wipe the real
-  // secret, so wp_update_option refuses any value that still carries the mask.
+  // secret, so wp_update_option refuses any value that still carries the mask. Public because
+  // the AI Engine tool set (premium/mcp-aiengine.php) masks and refuses the same way.
   public const SECRET_MASK = '••••';
   public const SECRET_NAME = '/api_?key|secret|token(?!s)|passw|private_?key|licen[cs]e|serial|credential|oauth/i';
 
-  private function mask_secrets( $value, bool $secret = false ) {
+  public static function mask_secrets( $value, bool $secret = false ) {
     if ( is_array( $value ) ) {
       foreach ( $value as $k => $v ) {
-        $value[$k] = $this->mask_secrets( $v, $secret || ( is_string( $k ) && preg_match( self::SECRET_NAME, $k ) ) );
+        $value[$k] = self::mask_secrets( $v, $secret || ( is_string( $k ) && preg_match( self::SECRET_NAME, $k ) ) );
       }
       return $value;
     }
     if ( is_object( $value ) ) {
-      return $this->mask_secrets( get_object_vars( $value ), $secret );
+      return self::mask_secrets( get_object_vars( $value ), $secret );
     }
     if ( !$secret || !is_string( $value ) || $value === '' ) {
       return $value;
@@ -609,10 +610,10 @@ class Meow_MWAI_Labs_MCP_Core {
     return strlen( $value ) >= 12 ? self::SECRET_MASK . substr( $value, -4 ) : self::SECRET_MASK;
   }
 
-  private function contains_mask( $value ): bool {
+  public static function contains_mask( $value ): bool {
     if ( is_array( $value ) ) {
       foreach ( $value as $v ) {
-        if ( $this->contains_mask( $v ) ) {
+        if ( self::contains_mask( $v ) ) {
           return true;
         }
       }

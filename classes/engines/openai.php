@@ -21,6 +21,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   // Static
   private static $creating = false;
 
+  // Azure only: provider file ids of documents (Word, Excel, PowerPoint...) that Code Interpreter
+  // reads for the current query, since Azure's Responses API takes only PDFs as input_file.
+  private $azureCodeInterpreterFileIds = [];
+
   // Responses API specific properties
   protected $previousResponseId = null;
   protected $conversationState = [];
@@ -504,7 +508,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       }
 
       // Add tools (web_search, image_generation, code_interpreter) if specified
-      if ( !empty( $query->tools ) && is_array( $query->tools ) ) {
+      if ( ( !empty( $query->tools ) && is_array( $query->tools ) ) || !empty( $this->azureCodeInterpreterFileIds ) ) {
 
         // Ensure tools array exists
         if ( !isset( $body['tools'] ) ) {
@@ -512,7 +516,11 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         }
 
         // Add each enabled tool
-        foreach ( $query->tools as $tool ) {
+        $tools = is_array( $query->tools ) ? $query->tools : [];
+        if ( !empty( $this->azureCodeInterpreterFileIds ) && !in_array( 'code_interpreter', $tools, true ) ) {
+          $tools[] = 'code_interpreter';
+        }
+        foreach ( $tools as $tool ) {
           if ( in_array( $tool, ['web_search', 'image_generation', 'code_interpreter'] ) ) {
             $toolConfig = [ 'type' => $tool ];
 
@@ -525,8 +533,12 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
             if ( $tool === 'code_interpreter' ) {
               $toolConfig['container'] = [ 'type' => 'auto' ];
               // Add file_ids if available in the query
-              if ( !empty( $query->fileIds ) && is_array( $query->fileIds ) ) {
-                $toolConfig['container']['file_ids'] = $query->fileIds;
+              $containerFiles = array_merge(
+                ( !empty( $query->fileIds ) && is_array( $query->fileIds ) ) ? $query->fileIds : [],
+                $this->azureCodeInterpreterFileIds
+              );
+              if ( !empty( $containerFiles ) ) {
+                $toolConfig['container']['file_ids'] = array_values( array_unique( $containerFiles ) );
               }
               // Code interpreter tool configured
             }
@@ -2927,6 +2939,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
    * @param Meow_MWAI_Query_Text $query The query with potential file attachments
    */
   protected function prepare_query( $query ) {
+    $this->azureCodeInterpreterFileIds = [];
     // Get all attachments using the unified method
     $attachments = method_exists( $query, 'getAttachments' ) ? $query->getAttachments() : [];
 
@@ -2934,6 +2947,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       return;
     }
 
+    $codeInterpreterIndexes = [];
     // Process each attachment - upload non-images to OpenAI Files API
     foreach ( $attachments as $index => $file ) {
       $mimeType = $file->get_mimeType() ?? '';
@@ -2944,12 +2958,10 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         continue;
       }
 
-      // Azure's Responses API reads only PDFs from uploaded files; Word, Excel and other
-      // documents need Code Interpreter there. Say so instead of failing later with a 400.
-      if ( $this->envType === 'azure' && $mimeType !== 'application/pdf' && $file->get_type() !== 'provider_file_id' ) {
-        throw new Exception( sprintf( 'The file %s cannot be sent to Azure OpenAI: Azure only accepts PDF documents here (and images).', $file->get_filename() ) );
-      }
-
+      // Azure's Responses API reads only PDFs as input_file. Word, Excel, PowerPoint and other
+      // documents go to Code Interpreter instead, which opens them itself (Sumitomo Chemical ran
+      // it this way in production since April, HS 3506730280).
+      $viaCodeInterpreter = $this->envType === 'azure' && $mimeType !== 'application/pdf';
       if ( $file->get_type() !== 'provider_file_id' ) {
         // File hasn't been uploaded to OpenAI yet - upload it now
         try {
@@ -2963,6 +2975,13 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           $uploadedFile = $uploadEngine->upload_file( $filename, $data, 'user_data' );
 
           $fileId = $uploadedFile['id'] ?? null;
+          if ( $fileId && $viaCodeInterpreter ) {
+            // Code Interpreter reads it from its container: it must not also be sent as input_file,
+            // which Azure refuses for these types, so it leaves the message (the message builder
+            // turns every remaining attachment into an input_file).
+            $this->azureCodeInterpreterFileIds[] = $fileId;
+            $codeInterpreterIndexes[] = $index;
+          }
 
           if ( $fileId ) {
             // Store provider file_id in metadata for cleanup later
@@ -2998,6 +3017,15 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
         if ( empty( $fileId ) ) {
           throw new Exception( sprintf( 'The file %s could not be sent to OpenAI: no file id came back.', $file->get_filename() ) );
         }
+      }
+    }
+
+    if ( !empty( $codeInterpreterIndexes ) ) {
+      if ( !empty( $query->attachedFiles ) ) {
+        $query->attachedFiles = array_values( array_diff_key( $query->attachedFiles, array_flip( $codeInterpreterIndexes ) ) );
+      }
+      if ( in_array( 0, $codeInterpreterIndexes, true ) && !empty( $query->attachedFile ) ) {
+        $query->attachedFile = null;
       }
     }
   }

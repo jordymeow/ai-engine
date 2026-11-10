@@ -483,6 +483,7 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
       'session' => $this->core->get_session_id(),
       'options' => $this->redact_secrets( $this->core->get_all_options() ),
       'chatbots' => $this->redact_chatbot_secrets( $this->core->get_chatbots() ),
+      'chatbots_revision' => $this->core->get_chatbots_revision(),
       'themes' => $this->core->get_themes(),
       'stream' => $this->core->get_option( 'ai_streaming' ),
       'cache_buster' => $cache_buster, // Pass cache buster for lazy-loaded chunks

@@ -859,7 +859,22 @@ class Meow_MWAI_API {
     }
     $fileId = isset( $params['fileId'] ) ? $params['fileId'] : null;
     $fileIds = isset( $params['fileIds'] ) ? $params['fileIds'] : [];
-    $data = $this->chatbot_module->chat_submit( $botId, $message, $fileId, $params, false, $fileIds );
+    // Without a chatId, a call is a one-off (a contact form tip, a scheduled task, a test): it
+    // belongs in Insights, not in Discussions, which are for visitors' conversations. A chatId
+    // still continues and saves a conversation (Jordy, 2026-11-09: 28% of meowapps.com's
+    // discussions were its contact form).
+    $oneOff = empty( $params['chatId'] ) && $this->discussions_module;
+    if ( $oneOff ) {
+      remove_filter( 'mwai_chatbot_reply', [ $this->discussions_module, 'chatbot_reply' ], 10 );
+    }
+    try {
+      $data = $this->chatbot_module->chat_submit( $botId, $message, $fileId, $params, false, $fileIds );
+    }
+    finally {
+      if ( $oneOff && $this->core->get_option( 'chatbot_discussions' ) ) {
+        add_filter( 'mwai_chatbot_reply', [ $this->discussions_module, 'chatbot_reply' ], 10, 4 );
+      }
+    }
     return $onlyReply ? $data['reply'] : $data;
   }
 

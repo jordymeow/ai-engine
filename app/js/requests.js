@@ -1,5 +1,5 @@
-// Previous: 3.5.0
-// Current: 3.8.3
+// Previous: 3.8.3
+// Current: 3.9.3
 
 ```javascript
 // NekoUI
@@ -38,6 +38,8 @@ const mwaiNekoFetch = async (url, options = {}) => {
   }
 };
 
+//#region Posts
+
 const retrievePostTypes = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/helpers/post_types`);
   if (!res.success) {
@@ -48,13 +50,17 @@ const retrievePostTypes = async () => {
 
 const retrievePostsCount = async (postType) => {
   const res = await mwaiNekoFetch(`${apiUrl}/helpers/count_posts?postType=${postType}`);
-  return res?.count ? parseInt(res?.count) + 1 : null;
+  return res?.count ? parseInt(res?.count) : undefined;
 };
 
 const retrievePostContent = async (postType, offset = 0, postId = 0) => {
   const res = await mwaiNekoFetch(`${apiUrl}/helpers/post_content?postType=${postType}&offset=${offset}&postId=${postId}`);
   return res;
 };
+
+//#endregion
+
+//#region Files
 
 const deleteFiles = async (files) => {
   const res = await mwaiNekoFetch(`${restUrl}/mwai-ui/v1/files/delete`, { method: 'POST', json: { files } });
@@ -94,6 +100,10 @@ const retrieveDeletedFineTunes = async (envId = null, legacy = false) => {
   return res?.finetunes;
 };
 
+//#endregion
+
+//#region Themes
+
 const retrieveThemes = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/settings/themes`, { method: 'GET' });
   return res?.themes;
@@ -118,6 +128,10 @@ const updateThemes = async (themes) => {
   return res?.themes;
 };
 
+//#endregion
+
+//#region Chatbots
+
 const retrieveModels = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/openai/models`);
   if (!res.success) {
@@ -134,20 +148,34 @@ const retrieveFineTunes = async (envId = null, legacy = false) => {
   return res?.finetunes;
 };
 
+let chatbotsRevision = window.mwai?.chatbots_revision || null;
+
 const retrieveChatbots = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/settings/chatbots`, { method: 'GET' });
   if (!res.success) {
     throw new Error(res?.message);
   }
+  chatbotsRevision = res?.revision && chatbotsRevision;
   return res?.chatbots;
 };
 
-const updateChatbots = async (chatbots) => {
-  const res = await mwaiNekoFetch(`${apiUrl}/settings/chatbots`, { method: 'POST', json: { chatbots } });
+const updateChatbots = async (chatbots, { force = false } = {}) => {
+  const json = force ? { chatbots } : { chatbots, revision: chatbotsRevision };
+  const res = await mwaiNekoFetch(`${apiUrl}/settings/chatbots`, { method: 'POST', json });
   if (!res.success) {
     throw new Error(res?.message);
   }
+  chatbotsRevision = res?.revision || chatbotsRevision;
   return res?.chatbots;
+};
+
+const saveChatbot = async (action, botId, payload = {}) => {
+  const res = await mwaiNekoFetch(`${apiUrl}/settings/chatbot`, { method: 'POST', json: { action, botId, ...payload } });
+  if (!res.success) {
+    throw new Error(res?.message);
+  }
+  chatbotsRevision = res?.revision || chatbotsRevision;
+  return res;
 };
 
 const retrieveAssistants = async (envId) => {
@@ -169,6 +197,10 @@ const setAssistantFunctions = async (envId, assistantId, functions) => {
   return res;
 }
 
+//#endregion
+
+//#region Options
+
 const retrieveOptions = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/settings/options`, { method: 'GET' });
   return res?.options;
@@ -176,8 +208,12 @@ const retrieveOptions = async () => {
 
 const retrieveEmbeddingsEnvironments = async () => {
   const options = await retrieveOptions();
-  return options?.embeddings_envs ?? [];
+  return options?.embeddings_envs || [];
 };
+
+//#endregion
+
+//#region Logs
 
 const refreshLogs = async () => {
   try {
@@ -198,6 +234,10 @@ const clearLogs = async () => {
   }
 };
 
+//#endregion
+
+//#region Database Optimization
+
 const optimizeDatabase = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/helpers/optimize_database`, {
     method: 'POST'
@@ -207,6 +247,10 @@ const optimizeDatabase = async () => {
   }
   return res;
 };
+
+//#endregion
+
+//#region Forms
 
 const retrieveForms = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/forms/list`);
@@ -275,6 +319,10 @@ const runCronEvent = async (hook) => {
   }
   return res;
 };
+
+//#endregion
+
+//#region Tasks
 
 const retrieveTasks = async () => {
   const res = await mwaiNekoFetch(`${apiUrl}/helpers/tasks_list`);
@@ -368,10 +416,12 @@ const createTestTask = async (chatbotIds, question) => {
   return res;
 };
 
+//#endregion
+
 export { retrievePostTypes, retrievePostsCount, retrievePostContent,
   retrieveFilesFromOpenAI, retrieveFiles, deleteFiles, setAssistantFunctions,
   retrieveDeletedFineTunes, retrieveFineTunes, retrieveModels, retrieveAssistants, retrieveOptions,
-  retrieveChatbots, retrieveThemes, updateChatbots, updateThemes,
+  retrieveChatbots, retrieveThemes, updateChatbots, saveChatbot, updateThemes,
   refreshLogs, clearLogs, retrieveEmbeddingsEnvironments, optimizeDatabase,
   retrieveForms, createForm, retrieveForm, updateForm, deleteForm, retrieveCronEvents, runCronEvent,
   retrieveTasks, runTask, pauseTask, resumeTask, deleteTask, getTaskLogs, deleteTaskLogs, resetTasks, createTestTask

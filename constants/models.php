@@ -977,6 +977,84 @@ define( 'MWAI_OPENAI_MODELS', [
       OpenAI's image generation models (token-based pricing)
       https://platform.openai.com/docs/models/gpt-image-1
       */
+  // GPT Image 2.6 (2026-10-28): same Sunburst (editing precision) and Flare (fast iteration) pair
+  // and the same token prices as 2.5 (checked on OpenAI's model pages, 2026-11-07).
+  [
+    'model' => 'gpt-image-2.6-sunburst',
+    'name' => 'GPT Image 2.6 Sunburst',
+    'family' => 'gpt-image',
+    'features' => ['text-to-image'],
+    'resolutions' => [
+      [
+        'name' => '1024x1024',
+        'label' => '1024x1024'
+      ],
+      [
+        'name' => '1024x1536',
+        'label' => '1024x1536'
+      ],
+      [
+        'name' => '1536x1024',
+        'label' => '1536x1024'
+      ]
+    ],
+    'qualities' => [
+      [ 'name' => 'auto',   'label' => 'Auto' ],
+      [ 'name' => 'low',    'label' => 'Low' ],
+      [ 'name' => 'medium', 'label' => 'Medium' ],
+      [ 'name' => 'high',   'label' => 'High' ],
+      [ 'name' => 'xhigh',  'label' => 'Extra High' ],
+      [ 'name' => 'max',    'label' => 'Max' ]
+    ],
+    'type' => 'token',
+    'mode' => 'image',
+    'price' => [
+      'in' => 8.00,
+      'out' => 30.00,
+      'cached' => 2.00
+    ],
+    'unit' => 1 / 1000000,
+    'finetune' => false,
+    'tags' => ['core', 'image', 'image-edit', 'responses']
+  ],
+  [
+    'model' => 'gpt-image-2.6-flare',
+    'name' => 'GPT Image 2.6 Flare',
+    'family' => 'gpt-image',
+    'features' => ['text-to-image'],
+    'resolutions' => [
+      [
+        'name' => '1024x1024',
+        'label' => '1024x1024'
+      ],
+      [
+        'name' => '1024x1536',
+        'label' => '1024x1536'
+      ],
+      [
+        'name' => '1536x1024',
+        'label' => '1536x1024'
+      ]
+    ],
+    'qualities' => [
+      [ 'name' => 'auto',   'label' => 'Auto' ],
+      [ 'name' => 'low',    'label' => 'Low' ],
+      [ 'name' => 'medium', 'label' => 'Medium' ],
+      [ 'name' => 'high',   'label' => 'High' ],
+      [ 'name' => 'xhigh',  'label' => 'Extra High' ],
+      [ 'name' => 'max',    'label' => 'Max' ]
+    ],
+    'type' => 'token',
+    'mode' => 'image',
+    'price' => [
+      'in' => 8.00,
+      'out' => 30.00,
+      'cached' => 2.00
+    ],
+    'unit' => 1 / 1000000,
+    'finetune' => false,
+    'tags' => ['core', 'image', 'image-edit', 'responses']
+  ],
   // GPT Image 2.5 (2026-09-10): Sunburst is tuned for editing precision, Flare for fast everyday
   // generation. Both add the xhigh and max quality levels and bill at GPT Image 2 token rates.
   [

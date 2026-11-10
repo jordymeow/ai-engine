@@ -247,6 +247,7 @@ define( 'MWAI_OPTIONS', [
   'mcp_default_readonly' => false,
   'mcp_approvals' => 'deletes',
   'mcp_beaver' => false,
+  'mcp_aiengine' => false,
   'mcp_drafts_only' => false,
   'mcp_log_calls' => true,
   'mcp_log_payloads' => false,

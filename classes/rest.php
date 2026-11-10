@@ -157,6 +157,11 @@ class Meow_MWAI_Rest {
         'permission_callback' => [ $this->core, 'can_access_settings' ],
         'callback' => [ $this, 'rest_settings_chatbots' ],
       ] );
+      register_rest_route( $this->namespace, '/settings/chatbot', [
+        'methods' => 'POST',
+        'permission_callback' => [ $this->core, 'can_access_settings' ],
+        'callback' => [ $this, 'rest_settings_chatbot' ],
+      ] );
       register_rest_route( $this->namespace, '/settings/themes', [
         'methods' => ['GET', 'POST'],
         'permission_callback' => [ $this->core, 'can_access_settings' ],
@@ -2651,19 +2656,43 @@ class Meow_MWAI_Rest {
       $method = $request->get_method();
       if ( $method === 'GET' ) {
         $chatbots = $this->core->get_chatbots();
-        return $this->create_rest_response( [ 'success' => true, 'chatbots' => $chatbots ], 200 );
+        return $this->create_rest_response( [ 'success' => true, 'chatbots' => $chatbots,
+          'revision' => $this->core->get_chatbots_revision() ], 200 );
       }
       else if ( $method === 'POST' ) {
         $params = $request->get_json_params();
         $chatbots = $params['chatbots'];
+        // Callers that don't send a revision (older screens, custom code) keep saving as before.
+        $revision = $params['revision'] ?? null;
+        if ( !empty( $revision ) && $revision !== $this->core->get_chatbots_revision() ) {
+          return $this->create_rest_response( [ 'success' => false, 'code' => 'chatbots_changed',
+            'message' => __( 'The chatbots were changed elsewhere (by an AI assistant over MCP, or in another tab) since this page loaded, so this change was not saved, to keep theirs. Reload the page to see the latest version, then make your change again.', 'ai-engine' ) ], 409 );
+        }
         $chatbots = $this->core->update_chatbots( $chatbots );
-        return $this->create_rest_response( [ 'success' => true, 'chatbots' => $chatbots ], 200 );
+        return $this->create_rest_response( [ 'success' => true, 'chatbots' => $chatbots,
+          'revision' => $this->core->get_chatbots_revision() ], 200 );
       }
       return $this->create_rest_response( [ 'success' => false, 'message' => 'Method not allowed' ], 405 );
     }
     catch ( Exception $e ) {
       $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
       return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 500 );
+    }
+  }
+
+  public function rest_settings_chatbot( $request ) {
+    try {
+      $params = $request->get_json_params();
+      $action = sanitize_key( $params['action'] ?? '' );
+      $botId = (string) ( $params['botId'] ?? '' );
+      $data = $action === 'update' ? ( $params['changes'] ?? [] ) : ( $params['chatbot'] ?? [] );
+      $result = $this->core->save_chatbot( $action, $botId, $data );
+      return $this->create_rest_response( [ 'success' => true, 'chatbot' => $result['chatbot'],
+        'botIds' => $result['botIds'], 'revision' => $this->core->get_chatbots_revision() ], 200 );
+    }
+    catch ( Exception $e ) {
+      $message = apply_filters( 'mwai_ai_exception', $e->getMessage() );
+      return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 400 );
     }
   }
 
