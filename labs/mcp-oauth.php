@@ -88,13 +88,13 @@ class Meow_MWAI_Labs_MCP_OAuth {
     if ( $path === false || strpos( $path, '/.well-known/' ) !== 0 ) {
       return;
     }
-    if ( strpos( $path, '/.well-known/oauth-protected-resource' ) === 0 ) {
+    if ( $this->is_own_wellknown( $path, '/.well-known/oauth-protected-resource' ) ) {
       if ( $this->logging ) {
         error_log( '[AI Engine MCP OAuth] Host-root PRM hit: ' . $path );
       }
       $this->emit_json( $this->protected_resource_metadata() );
     }
-    if ( strpos( $path, '/.well-known/oauth-authorization-server' ) === 0 ) {
+    if ( $this->is_own_wellknown( $path, '/.well-known/oauth-authorization-server' ) ) {
       if ( $this->logging ) {
         error_log( '[AI Engine MCP OAuth] Host-root ASM hit: ' . $path );
       }
@@ -108,6 +108,20 @@ class Meow_MWAI_Labs_MCP_OAuth {
       }
       $this->emit_json( $this->openid_configuration() );
     }
+  }
+
+  /**
+   * Whether a host-root well-known URL is ours: the bare form, or the RFC form carrying our
+   * own resource path. Other plugins run their own MCP servers (BetterLinks serves
+   * /.well-known/oauth-protected-resource/betterlinks/mcp), and answering their URLs with our
+   * metadata made ChatGPT reject their OAuth discovery.
+   */
+  private function is_own_wellknown( $path, $base ) {
+    if ( strpos( $path, $base ) !== 0 ) {
+      return false;
+    }
+    $suffix = rtrim( substr( $path, strlen( $base ) ), '/' );
+    return $suffix === '' || strpos( $suffix . '/', '/' . $this->namespace . '/' ) !== false;
   }
 
   /**
@@ -1432,9 +1446,11 @@ class Meow_MWAI_Labs_MCP_OAuth {
     if ( $host === '' || in_array( $host, [ 'localhost', '127.0.0.1', '[::1]', '::1' ], true ) ) {
       return null;
     }
-    // Torii, our own gateway, connects Claude and ChatGPT on the user's behalf.
-    if ( $host === 'connect.meowapps.com' || substr( $host, -15 ) === '.meowapps.com' ) {
-      return null;
+    // Torii (Connect WP), our own gateway, connects Claude and ChatGPT on the user's behalf.
+    foreach ( [ 'meowapps.com', 'connectwp.ai' ] as $ours ) {
+      if ( $host === $ours || substr( $host, -strlen( '.' . $ours ) ) === '.' . $ours ) {
+        return null;
+      }
     }
     $name = strtolower( (string) $client_name );
     foreach ( $brands as $brand => $words ) {

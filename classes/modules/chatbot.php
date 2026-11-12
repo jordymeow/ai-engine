@@ -1586,6 +1586,11 @@ class Meow_MWAI_Modules_Chatbot {
     // fileUpload (checkbox) determines if uploads are enabled
     // maxUploads (number) determines how many files can be uploaded
     $fileUploadEnabled = !empty( $frontParams['fileUpload'] ) || !empty( $frontParams['imageUpload'] );
+    // The upload route refuses visitors on sites that offer no uploads. A shortcode can turn
+    // uploads on for a chatbot that has them off, so remember it was offered at least once.
+    if ( $fileUploadEnabled && !get_option( 'mwai_uploads_offered' ) ) {
+      update_option( 'mwai_uploads_offered', 1 );
+    }
     $maxFiles = isset( $frontParams['maxUploads'] ) ? max( 1, (int) $frontParams['maxUploads'] ) : 1;
 
     // Sync all params for backward compatibility

@@ -388,6 +388,9 @@ class Meow_MWAI_Modules_Files {
   */
   public function check_file_content( $path, $filename ) {
     require_once( ABSPATH . 'wp-admin/includes/file.php' );
+    if ( $this->starts_with_markup( $path ) ) {
+      return null;
+    }
     $check = wp_check_filetype_and_ext( $path, $filename );
     if ( !empty( $check['type'] ) ) {
       return [ 'ext' => $check['ext'], 'type' => $check['type'] ];
@@ -406,6 +409,56 @@ class Meow_MWAI_Modules_Files {
     }
     $isMedia = strpos( $realMime, 'audio/' ) === 0 || strpos( $realMime, 'video/' ) === 0 || $realMime === 'application/ogg';
     return $isMedia ? [ 'ext' => $ext, 'type' => 'audio/' . $ext ] : null;
+  }
+
+  /**
+  * Whether a file begins with a tag, once leading whitespace is skipped. That is the only shape a
+  * browser turns into a page when the server sends no Content-Type: every HTML and XML pattern of
+  * the MIME sniffing standard starts with "<". WordPress accepts such text under extensions many
+  * servers don't map (.rtx, text/richtext), which stored a running script in the public uploads
+  * folder (Patchstack 39350). No file we store has a reason to start with a tag.
+  */
+  private function starts_with_markup( $path ) {
+    $head = @file_get_contents( $path, false, null, 0, 2048 );
+    if ( $head === false || $head === '' ) {
+      return false;
+    }
+    if ( substr( $head, 0, 3 ) === "\xEF\xBB\xBF" ) {
+      $head = substr( $head, 3 );
+    }
+    return substr( ltrim( $head, " \t\n\r\f\v\0" ), 0, 1 ) === '<';
+  }
+
+  /**
+  * The extensions a visitor may upload through a chatbot or a form. WordPress allows many more
+  * (get_allowed_mime_types), some of them served without a type by common servers; users who can
+  * upload media in WordPress keep that wider list.
+  */
+  public function visitor_upload_extensions() {
+    $extensions = [
+      'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic',
+      'pdf', 'txt', 'csv', 'md', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'rtf',
+      'mp3', 'm4a', 'wav', 'ogg', 'oga', 'flac', 'webm', 'mp4', 'mpeg', 'mpga', 'mov',
+    ];
+    return array_map( 'strtolower', (array) apply_filters( 'mwai_visitor_upload_extensions', $extensions ) );
+  }
+
+  /**
+  * Whether this site offers uploads to visitors at all: a chatbot with uploads on, a chatbot
+  * rendered with uploads on (shortcode overrides, remembered in mwai_uploads_offered), or AI Forms.
+  * Without any of them, nobody but a script would call the upload route.
+  */
+  public function uploads_are_offered() {
+    $offered = (bool) get_option( 'mwai_uploads_offered' ) || (bool) $this->core->get_option( 'module_forms' );
+    if ( !$offered ) {
+      foreach ( $this->core->get_chatbots() as $chatbot ) {
+        if ( !empty( $chatbot['fileUpload'] ) || !empty( $chatbot['imageUpload'] ) ) {
+          $offered = true;
+          break;
+        }
+      }
+    }
+    return (bool) apply_filters( 'mwai_uploads_offered', $offered );
   }
 
   public function upload_file(
@@ -910,9 +963,32 @@ class Meow_MWAI_Modules_Files {
     }
     $purpose = empty( $_POST['purpose'] ) ? null : sanitize_text_field( wp_unslash( $_POST['purpose'] ) );
     $metadata = empty( $_POST['metadata'] ) ? null : json_decode( $_POST['metadata'], true );
+    // Visitor metadata is stored as is: keep it small and flat.
+    if ( is_array( $metadata ) ) {
+      $metadata = array_slice( array_filter( $metadata, 'is_scalar' ), 0, 20, true );
+      foreach ( $metadata as $metaKey => $metaValue ) {
+        if ( is_string( $metaValue ) ) {
+          $metadata[ $metaKey ] = mb_substr( $metaValue, 0, 1000 );
+        }
+      }
+    }
+    else {
+      $metadata = null;
+    }
     $envId = empty( $_POST['envId'] ) ? null : sanitize_text_field( wp_unslash( $_POST['envId'] ) );
     if ( !$purpose ) {
       return new WP_REST_Response( [ 'success' => false, 'message' => 'Purpose is required.' ], 400 );
+    }
+    // This route is open to visitors (the nonce is public), so it only works where the site
+    // offers uploads, and only for a short list of file types (Patchstack 39350).
+    if ( !is_user_logged_in() && !$this->uploads_are_offered() ) {
+      return new WP_REST_Response( [ 'success' => false, 'message' => 'Uploads are not enabled on this site.' ], 403 );
+    }
+    if ( !current_user_can( 'upload_files' ) ) {
+      $ext = strtolower( pathinfo( (string) $file['name'], PATHINFO_EXTENSION ) );
+      if ( !in_array( $ext, $this->visitor_upload_extensions(), true ) ) {
+        return new WP_REST_Response( [ 'success' => false, 'message' => 'This type of file is not accepted.' ], 400 );
+      }
     }
     // The same content check upload_file() runs, early, so a refused file costs nothing.
     if ( !$this->check_file_content( $file['tmp_name'], $file['name'] ) ) {

@@ -166,7 +166,11 @@ class Meow_MWAI_Modules_Search {
   // The same term is only paid for once a day. A failed search returns null and is not cached.
   private function cached_post_ids( $method, $term, callable $search ) {
     $env_id = $this->core->get_option( 'search_frontend_env_id', '' );
-    $key = 'mwai_search_' . md5( $method . '|' . $env_id . '|' . mb_strtolower( trim( $term ) ) );
+    // The environment's Max Results and Min Score shape the results, so changing them must not
+    // keep serving a list cached under the old values for a day.
+    $env = $env_id ? $this->core->get_embeddings_env( $env_id ) : null;
+    $tuning = ( $env['max_select'] ?? '' ) . '|' . ( $env['min_score'] ?? '' );
+    $key = 'mwai_search_' . md5( $method . '|' . $env_id . '|' . $tuning . '|' . mb_strtolower( trim( $term ) ) );
     $post_ids = get_transient( $key );
     if ( $post_ids === false ) {
       $post_ids = $search();

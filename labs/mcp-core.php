@@ -657,7 +657,7 @@ class Meow_MWAI_Labs_MCP_Core {
       /* -------- Plugins -------- */
       'wp_list_plugins' => [
         'name' => 'wp_list_plugins',
-        'description' => 'List installed plugins (returns array of {Name, Version}).',
+        'description' => 'List the installed plugins (name, slug, version, active, newer version available), with the WordPress, PHP and active theme versions: everything an update or security check needs, in one call.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => [ 'search' => [ 'type' => 'string' ] ],
@@ -2009,13 +2009,29 @@ class Meow_MWAI_Labs_MCP_Core {
           require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
         $search = sanitize_text_field( $a['search'] ?? '' );
-        $out = [];
-        foreach ( get_plugins() as $p ) {
-          if ( !$search || stripos( $p['Name'], $search ) !== false ) {
-            $out[] = [ 'Name' => $p['Name'], 'Version' => $p['Version'] ];
+        $updates = get_site_transient( 'update_plugins' );
+        $plugins = [];
+        foreach ( get_plugins() as $file => $p ) {
+          if ( $search && stripos( $p['Name'], $search ) === false ) {
+            continue;
           }
+          // The slug vulnerability databases use: the folder, or the file name for a single-file plugin.
+          $slug = strpos( $file, '/' ) !== false ? dirname( $file ) : basename( $file, '.php' );
+          $plugins[] = [
+            'Name' => $p['Name'],
+            'Slug' => $slug,
+            'Version' => $p['Version'],
+            'Active' => is_plugin_active( $file ),
+            'Update' => $updates->response[ $file ]->new_version ?? null,
+          ];
         }
-        $this->add_result_text( $r, wp_json_encode( $out, JSON_PRETTY_PRINT ) );
+        $theme = wp_get_theme();
+        $this->add_result_text( $r, wp_json_encode( [
+          'wordpress' => get_bloginfo( 'version' ),
+          'php' => PHP_VERSION,
+          'theme' => [ 'Name' => $theme->get( 'Name' ), 'Slug' => $theme->get_stylesheet(), 'Version' => $theme->get( 'Version' ) ],
+          'plugins' => $plugins,
+        ], JSON_PRETTY_PRINT ) );
         break;
 
         /* ===== Posts: list ===== */

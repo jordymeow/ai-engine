@@ -162,12 +162,12 @@ define( 'MWAI_OPENAI_MODELS', [
     'name' => 'GPT-5.6 Sol',
     'family' => 'gpt-5',
     'features' => ['completion'],
-    // Price cut by OpenAI on 2026-08-21 (was 5.00 / 30.00 / 0.50). Announced as
-    // promotional "at least through 2026-11-21", so re-check it after that date.
+    // OpenAI's promotional price (4.00 / 20.00 / 0.40, from 2026-08-21) ends on 2026-11-30,
+    // back to the standard rates below (OpenAI email, 2026-11-04).
     'price' => [
-      'in' => 4.00,
-      'out' => 20.00,
-      'cached' => 0.40,
+      'in' => 5.00,
+      'out' => 30.00,
+      'cached' => 0.50,
     ],
     'type' => 'token',
     'unit' => 1 / 1000000,
@@ -778,7 +778,7 @@ define( 'MWAI_OPENAI_MODELS', [
     'unit' => 1 / 1000000,
     'maxCompletionTokens' => 100000,
     'maxContextualTokens' => 200000,
-    'tags' => ['core', 'chat', 'o1-model', 'reasoning', 'responses', 'mcp'],
+    'tags' => ['core', 'chat', 'o1-model', 'reasoning', 'responses', 'mcp', 'deprecated'],
     'tools' => ['web_search', 'image_generation', 'code_interpreter']
   ],
   /*
@@ -1167,7 +1167,7 @@ define( 'MWAI_OPENAI_MODELS', [
     ],
     'unit' => 1 / 1000000,
     'finetune' => false,
-    'tags' => ['core', 'image', 'image-edit', 'responses']
+    'tags' => ['core', 'image', 'image-edit', 'responses', 'deprecated']
   ],
   [
     'model' => 'gpt-image-1.5',

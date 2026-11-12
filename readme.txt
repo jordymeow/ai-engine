@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.9.3
+Stable tag: 3.9.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -235,6 +235,17 @@ Report security vulnerabilities through the [Patchstack Vulnerability Disclosure
 
 == Changelog ==
 
+= 3.9.4 (2026/11/12) =
+* Fix: Security: Block uploads of files that browsers would run as a web page (reported by ashv4ni via Patchstack).
+* Add: MCP: wp_list_plugins now returns the WordPress, PHP and theme versions, plus each plugin's slug, status and available update.
+* Add: MCP: Knowledge entries can be deleted by filter, including posts that are no longer published.
+* Add: MCP: Discussions now show the chatbot's first reply and can be filtered by what it replied.
+* Update: Marked o3 and GPT Image 2 as deprecated, since OpenAI retires them.
+* Update: New sites now default to GPT Image 2.6 Flare for image generation; existing settings are kept.
+* Update: GPT-5.6 Sol is now priced at its standard rate, as OpenAI's promotional price ends on November 30.
+* Fix: MCP discovery no longer answers for other plugins' MCP servers, so ChatGPT can connect to both.
+* Fix: The front search no longer shows old results for a day after Max Results or Min Score is changed.
+
 = 3.9.3 (2026/11/10) =
 * Add: GPT Image 2.6 Sunburst and Flare models.
 * Add: MCP now manage AI Engine itself: chatbots, discussions, insights, knowledge, settings and modules, with undo for chatbot and settings changes. MCP AI Engine tools can test a chatbot, read a knowledge entry in full, find entries by text or entries that lost their post, estimate costs, and keep removed content.
@@ -382,93 +393,6 @@ Report security vulnerabilities through the [Patchstack Vulnerability Disclosure
 * Fix: A Max Height set without a unit is now treated as pixels.
 * Fix: AI Forms set to a specific environment with the Default model now work instead of failing with "Model not found".
 * Fix: Settings changed while a chatbot reply is running are no longer undone when that reply saves its usage stats, which could revert a refreshed model list.
-
-= 3.8.5 (2026/10/14) =
-* Fix: Security: MCP no longer returns API keys or tokens when reading WordPress options.
-* Fix: Security: Pro MCP tools now refuse accounts that cannot manage the site instead of running as the first user, and they pause when the license lapses.
-* Fix: Security: Uploaded files can no longer carry metadata AI Engine uses internally, and the expired files cleanup only deletes the expired file itself.
-* Add: GPT Realtime 2.1 and GPT Realtime 2.1 Mini for voice chatbots.
-* Add: Claude Haiku 5.5.
-* Add: Notice on new sites to turn on the MCP module in one click.
-* Add: Warning in Settings and the chatbot editor when Knowledge has no embeddings model to search with.
-* Add: Optional comment_parent on the MCP wp_create_comment tool, to reply inside a comment thread.
-* Update: Playground presets are now a system prompt with parameters: picking one no longer fills the message box or resets the models being compared, the message box sits on top while the conversation is empty, and reply stats read plainly.
-* Update: The Knowledge Export button is now always visible under the table, instead of only in Expert Mode.
-* Update: AI Forms in chatbot mode now use the chatbot's functions and MCP servers.
-* Update: Gemini 3.6 and newer no longer receive the temperature setting, and Gemini 3 and newer no longer receive a thinking budget.
-* Update: The Perplexity connection check now uses the models endpoint, and shows Perplexity's own error when the key is wrong.
-* Update: Streamed replies stay connected through long silent phases such as Code Interpreter or slow tool calls, and stop calling the AI provider when the visitor leaves.
-* Fix: ChatGPT connections no longer fail with a missing resultType error when MCP requests use the 2026-07-28 format.
-* Fix: ChatGPT and Claude can now sign in to MCP on servers that block paths containing /.well-known/ under /wp-json/, like many nginx setups.
-* Fix: Connecting ChatGPT or Claude no longer fails with an expired code right after approval on sites with a persistent object cache.
-* Fix: Claude Sonnet 5.5 cache reads now cost $0.10, as Anthropic charges.
-* Fix: AI Engine no longer loads the block editor scripts on Classic Editor screens, which broke plugins like HTML Editor Syntax Highlighter.
-
-= 3.8.4 (2026/10/08) =
-* Fix: Security: A chatbot shortcode in a post can now only change the prompt, model or API key when its author can edit others' posts.
-* Fix: Security: The search endpoint used by the Search settings screen is now limited to administrators.
-* Add: Claude Opus 5.5 and Claude Sonnet 5.5.
-* Add: GPT-6 Sol, GPT-6 Luna and GPT-6.1 Sol.
-* Add: MCP tools to create, update, resolve and delete editor Notes, attached to the right block.
-* Add: Gemini image sizes 512px, 1K, 2K and 4K, from the mwai_image MCP tool or the imageSize query param; models limited to 1K keep their default.
-* Add: The mwai_image MCP tool now accepts an environment, a model, a quality and a file name per call, names files after the title, and records the model used.
-* Add: An mwai_generated meta on every image AI Engine saves to the Media Library, set before wp_generate_attachment_metadata runs.
-* Add: REST routes to enable MCP and check its status.
-* Add: The mwai_anthropic_body filter, to tune the Anthropic request such as the web search limits before it is sent.
-* Update: Knowledge now keeps at least 16,384 characters of each post instead of the old 4,096 default kept on older sites, and long posts are not re-synced after the update.
-* Update: Pro modules switched off while a license was missing now turn back on by themselves once the license is valid again.
-* Update: Site search with Knowledge or AI keywords skips bot and spam searches, and the same search is only paid for once a day.
-* Update: The MCP Plugins and Themes options now say they can read and edit files, and the tool sets remind you to refresh the tools in ChatGPT or Claude after a change.
-* Update: Workspace conversations continue on the model of their last reply, a new chat starts on your default model, and a default the site cannot run falls back to the first model.
-* Update: Pinecone and Qdrant now keep each chunk's text and post ID, so Pull All rebuilds a working Knowledge base after a site move.
-* Update: Current Claude models can now be picked as the default model for JSON queries.
-* Update: Marked Claude Sonnet 4.5, GPT-5.4 Nano and GPT-5.1 as deprecated.
-* Update: The review notice now shows two days after the first successful MCP tool call.
-* Fix: Qdrant and Chroma server URLs pasted from the browser, like :6333/dashboard#, now work instead of sending every request to the dashboard page.
-* Fix: Streamed replies are no longer cut after 5 minutes while still arriving, only when the connection goes silent.
-* Fix: The JSON helpers used by Meow Apps Health and add-ons now work on Claude and Gemini sites with default settings.
-* Fix: Uploading to an OpenAI Vector Store now says exactly what is wrong with the environment, such as a missing store ID, no OpenAI environment or no API key.
-* Fix: Pro sites whose server cannot reach the update server no longer hit a fatal error on PHP 8 when WordPress checks for updates.
-
-= 3.8.3 (2026/10/01) =
-* Add: Abilities to MCP, so tools registered by plugins through the WordPress Abilities API work over MCP and in Workspace, appear in MCP Logs, and are labelled Ability or Native in the renamed MCP Tools & Abilities list.
-* Add: Cached tokens are now counted and priced at the cached rate for OpenAI, Anthropic, DeepSeek, OpenRouter and Claude Fable 5, and Insights shows cached tokens per query.
-* Add: OpenAI requests carry a prompt cache key per chatbot, so repeated prompts and tools are billed at the cached rate.
-* Add: A reply cut by Max Tokens now ends with a short notice instead of stopping mid-sentence, in chatbots and forms.
-* Add: A chatbot limited to one file shows the attached file name and a remove button before sending, like the multi-file mode.
-* Add: Prices for Gemini text models, so their queries are costed and dollar limits apply to them.
-* Add: The mwai_openrouter_body filter, to add any OpenRouter parameter to a request, such as provider routing.
-* Update: The MCP settings were reorganized, with the Connect card filling its block, Connections and MCP Settings under it, tool sets and WordPress abilities under the tools list, and the bearer token masked in the Claude Code commands.
-* Update: The Files Manager lists files uploaded by every user and guest instead of only your own, and expired files are cleaned up every hour instead of once a day.
-* Update: New chatbots start with their texts in the site language instead of always in English, existing chatbots are untouched.
-* Update: OpenRouter requests are attributed to AI Engine instead of each site, and the existing filters still let a site credit itself.
-* Update: Workspace chats are grouped under Today and Yesterday in the user timezone instead of UTC.
-* Fix: The Editor Assistant no longer fails with Feedback session expired after applying edits, saved queries no longer store API keys, and it now sees paragraphs edited after the page loaded.
-* Fix: Claude, Gemini and other non-OpenAI chatbots on an OpenAI Vector Store now receive the matching knowledge instead of an empty context.
-* Fix: Non-streamed errors from OpenRouter, Mistral, OVH and custom providers are shown as a message instead of raw JSON.
-* Fix: Gemini replies cut by Max Tokens end with the notice instead of an empty-reply error, and Gemini errors wrapped in a list are readable.
-* Fix: Picking an environment without a model now asks for one instead of sending another provider's default model and failing with a 404.
-* Fix: An AI Form repeated on a page answers in its own copy, and a streamed form error no longer floods the PHP log.
-* Fix: GPT-6 Astra can generate images, its model entry was missing the image generation tool.
-* Fix: Uploads that fail now say why, with the size limit when the file is too large, instead of an unknown error or a wrong invalid file type message.
-* Fix: An empty completion request is refused before reaching the provider, and Suggest Synonyms without a selection returns a clear error instead of a fatal.
-* Fix: MCP tool failures, like a missing post, reach the AI as a readable tool error instead of a protocol error.
-* Fix: ChatGPT MCP connections no longer drop when several of its sessions share one connection, and revoking an app disconnects all of its sessions at once.
-* Fix: When AI Engine manages the WordPress Connectors, an empty key no longer wipes a saved one, and keys already saved in WordPress are reused.
-* Fix: Syncing a single post that gets skipped (ignored, language filter, or filtered out) now says why instead of doing nothing.
-* Fix: Copying a masked MCP command by hand copies the real token, and Knowledge asks to pick an environment instead of showing the first-run screen.
-* Fix: On touch screens the Stop button works with a single tap, while a quick double tap on Send still cannot cancel the message.
-* Fix: A failed license check shows the real reason straight away, and a successful retry no longer keeps saying the Pro version is disabled.
-* Fix: Two PHP warnings on every logs request when Insights is off.
-
-= 3.8.2 (2026/09/25) =
-* Add: Connect an AI assistant card in the MCP settings, which checks the host, guides you through Claude, ChatGPT or Claude Code step by step, and confirms the connection works.
-* Add: The license section now names the actual problem (server unreachable, not activated on this site, expired) instead of an unknown error, and lets you copy the diagnosis for support.
-* Update: The MCP settings and the readme now state that connections are direct, with no relay, no fee or cap, and credentials staying on the site.
-* Fix: A site that cannot reach the license server no longer hangs the admin for minutes: connection diagnostics run once instead of once per URL, and the license check times out after 20 seconds instead of 45.
-* Fix: MCP connections no longer break when a client, such as ChatGPT, reuses a refresh token that was already replaced.
-* Fix: Chatbots with streaming disabled no longer slide the window up when a reply starts, which hid the Glass header and could make the page jump.
-* Fix: Add-ons now keep their own visitor params as sent; only denied keys are matched by their canonical name and only messages is folded into one key.
 
 For older releases, see [changelog.txt](https://plugins.svn.wordpress.org/ai-engine/trunk/changelog.txt).
 
