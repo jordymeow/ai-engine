@@ -1077,12 +1077,26 @@ class Meow_MWAI_Engines_Google extends Meow_MWAI_Engines_Core {
   }
 
   public function retrieve_models() {
-    $url = $this->endpoint . '/models?key=' . $this->apiKey;
-    $response = wp_remote_get( $url );
-    if ( is_wp_error( $response ) ) {
-      throw new Exception( 'AI Engine: ' . $response->get_error_message() );
+    // Google pages this list (50 models by default): reading the first page only dropped
+    // whatever came after it, gemini-embedding-2 for one. Ask for big pages and follow them.
+    $body = [ 'models' => [] ];
+    $pageToken = null;
+    for ( $page = 0; $page < 10; $page++ ) {
+      $url = $this->endpoint . '/models?pageSize=1000&key=' . $this->apiKey
+        . ( $pageToken ? '&pageToken=' . rawurlencode( $pageToken ) : '' );
+      $response = wp_remote_get( $url );
+      if ( is_wp_error( $response ) ) {
+        throw new Exception( 'AI Engine: ' . $response->get_error_message() );
+      }
+      $pageBody = json_decode( $response['body'], true );
+      if ( !empty( $pageBody['models'] ) && is_array( $pageBody['models'] ) ) {
+        $body['models'] = array_merge( $body['models'], $pageBody['models'] );
+      }
+      $pageToken = $pageBody['nextPageToken'] ?? null;
+      if ( empty( $pageToken ) ) {
+        break;
+      }
     }
-    $body = json_decode( $response['body'], true );
     $models = [];
 
     if ( empty( $body['models'] ) || !is_array( $body['models'] ) ) {

@@ -85,7 +85,17 @@ class Meow_MWAI_Labs_MCP_OAuth {
   public function handle_host_root_wellknown() {
     $uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
     $path = strtok( $uri, '?' );
-    if ( $path === false || strpos( $path, '/.well-known/' ) !== 0 ) {
+    if ( $path === false ) {
+      return;
+    }
+    // WordPress in a subfolder (/staging/3113/): home_url() puts /.well-known/ under that folder,
+    // and the host root belongs to another install. Without this, the Connection Test reported
+    // "discovery blocked" on every subfolder site while the real connectors worked (wp.org, 11-15).
+    $home_path = rtrim( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ), '/' );
+    if ( $home_path !== '' && strpos( $path, $home_path . '/.well-known/' ) === 0 ) {
+      $path = substr( $path, strlen( $home_path ) );
+    }
+    if ( strpos( $path, '/.well-known/' ) !== 0 ) {
       return;
     }
     if ( $this->is_own_wellknown( $path, '/.well-known/oauth-protected-resource' ) ) {
@@ -885,13 +895,19 @@ class Meow_MWAI_Labs_MCP_OAuth {
     $access_token = $this->random_token( 48 );
     $refresh_token = $this->random_token( 48 );
     $now = time();
+    // An hour by default. A site can lengthen it for clients that never refresh: claude.ai's
+    // custom connectors do not call /token again, so they disconnect and scheduled tasks fail
+    // (anthropics/claude-ai-mcp#228, wp.org thread 2026-11-17). A longer life means a leaked
+    // token works longer, so it stays the site's choice, and Connected Apps still revokes it.
+    $access_ttl = (int) apply_filters( 'mwai_mcp_access_token_ttl', self::ACCESS_TOKEN_TTL, $client_id, $user_id );
+    $access_ttl = min( max( $access_ttl, 5 * MINUTE_IN_SECONDS ), YEAR_IN_SECONDS );
 
     $wpdb->insert( $this->table_tokens, [
       'client_id' => $client_id,
       'user_id' => $user_id,
       'access_token_hash' => hash( 'sha256', $access_token ),
       'refresh_token_hash' => hash( 'sha256', $refresh_token ),
-      'access_expires' => gmdate( 'Y-m-d H:i:s', $now + self::ACCESS_TOKEN_TTL ),
+      'access_expires' => gmdate( 'Y-m-d H:i:s', $now + $access_ttl ),
       'refresh_expires' => gmdate( 'Y-m-d H:i:s', $now + self::REFRESH_TOKEN_TTL ),
       'scope' => $scope,
       'created' => $previous ? $previous->created : gmdate( 'Y-m-d H:i:s', $now ),
@@ -902,7 +918,7 @@ class Meow_MWAI_Labs_MCP_OAuth {
     $response = new WP_REST_Response( [
       'access_token' => $access_token,
       'token_type' => 'Bearer',
-      'expires_in' => self::ACCESS_TOKEN_TTL,
+      'expires_in' => $access_ttl,
       'refresh_token' => $refresh_token,
       'scope' => $scope,
     ], 200 );
@@ -1098,12 +1114,14 @@ class Meow_MWAI_Labs_MCP_OAuth {
   #region Admin: list / revoke grants
   public function handle_apps_list() {
     global $wpdb;
+    // Whichever of the two tokens lives longer: with mwai_mcp_access_token_ttl an access token
+    // can outlive its refresh token, and a grant that still works must stay listed (and revocable).
     $rows = $wpdb->get_results( $wpdb->prepare(
       "SELECT t.id, t.client_id, t.user_id, t.scope, t.created, t.last_used, t.access_expires, t.refresh_expires, t.revoked,
               c.client_name
        FROM {$this->table_tokens} t
        LEFT JOIN {$this->table_clients} c ON c.client_id = t.client_id
-       WHERE t.revoked = 0 AND COALESCE( t.refresh_expires, t.access_expires ) > %s
+       WHERE t.revoked = 0 AND GREATEST( t.access_expires, COALESCE( t.refresh_expires, t.access_expires ) ) > %s
        ORDER BY t.id DESC",
       gmdate( 'Y-m-d H:i:s' )
     ) );

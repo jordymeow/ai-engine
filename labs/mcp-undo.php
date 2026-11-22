@@ -273,9 +273,12 @@ class Meow_MWAI_Labs_MCP_Undo {
       case 'wp_create_term':
       case 'wp_create_comment':
       case 'wp_create_note':
-      case 'wp_upload_media':
         // What they create is found by the insert hooks.
         return [];
+
+      case 'wp_upload_media':
+        // The file itself is found by the insert hooks; "featured" also changes the post it goes to.
+        return $id && !empty( $a['featured'] ) ? [ $meta( '_thumbnail_id' ) ] : [];
 
       case 'wp_update_post':
         $fields = self::json_arg( $a['fields'] ?? null );

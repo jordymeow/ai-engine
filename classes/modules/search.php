@@ -749,6 +749,33 @@ class Meow_MWAI_Modules_Search {
     ];
   }
 
+  /**
+  * After the semantic results, the published posts that contain the searched words themselves,
+  * whatever their case. An embedding compares meaning, so an acronym, a product code or a name
+  * typed in another case scores under the minimum and vanished from the results, where the
+  * plain WordPress search found it (HelpScout 3511014715). Semantic results keep their order
+  * and come first; mwai_search_exact_matches turns this off.
+  */
+  private function add_exact_matches( $post_ids, $search_text ) {
+    if ( !apply_filters( 'mwai_search_exact_matches', true, $search_text ) ) {
+      return $post_ids;
+    }
+    $found = get_posts( [
+      's' => $search_text,
+      'post_type' => 'any',
+      'post_status' => 'publish',
+      'posts_per_page' => 20,
+      'fields' => 'ids',
+    ] );
+    $known = array_column( $post_ids, 'id' );
+    foreach ( $found as $id ) {
+      if ( !in_array( (int) $id, $known, true ) ) {
+        $post_ids[] = [ 'id' => (int) $id, 'score' => 0 ];
+      }
+    }
+    return $post_ids;
+  }
+
   private function search_with_embeddings( $search_text, $env_id = null ) {
     if ( !class_exists( 'MeowPro_MWAI_Embeddings' ) ) {
       return [ 'error' => 'Embeddings module not available' ];
@@ -779,10 +806,12 @@ class Meow_MWAI_Modules_Search {
       $vectors = isset( $result['rows'] ) ? $result['rows'] : [];
 
       if ( empty( $vectors ) ) {
+        $post_ids = $this->add_exact_matches( [], $search_text );
         return [
-          'post_ids' => [],
+          'post_ids' => $post_ids,
           'debug' => [
             'total_vectors' => 0,
+            'exact_matches' => count( $post_ids ),
             'message' => 'No matching vectors found'
           ]
         ];
@@ -814,12 +843,15 @@ class Meow_MWAI_Modules_Search {
       usort( $post_ids, function ( $a, $b ) {
         return $b['score'] <=> $a['score'];
       } );
+      $semantic = count( $post_ids );
+      $post_ids = $this->add_exact_matches( $post_ids, $search_text );
 
       return [
         'post_ids' => $post_ids,
         'debug' => [
           'total_vectors' => count( $vectors ),
-          'filtered_posts' => count( $post_ids ),
+          'filtered_posts' => $semantic,
+          'exact_matches' => count( $post_ids ) - $semantic,
           'min_score' => isset( $env['min_score'] ) ? (float) $env['min_score'] : 35,
           'sample_vectors' => array_slice( $debug_info, 0, 5 )
         ]

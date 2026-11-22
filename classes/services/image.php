@@ -144,6 +144,17 @@ class Meow_MWAI_Services_Image {
     return wp_remote_retrieve_body( $response );
   }
 
+  // The extension of a file name when WordPress accepts it as an image here, or ''. Images only:
+  // the wider upload list includes HTML for users allowed to post unfiltered HTML, and SVG on
+  // sites that enabled it, and both can carry scripts.
+  private function image_extension_of( $name ) {
+    $type = wp_check_filetype( (string) $name, null );
+    if ( empty( $type['ext'] ) || empty( $type['type'] ) || strpos( $type['type'], 'image/' ) !== 0 || $type['type'] === 'image/svg+xml' ) {
+      return '';
+    }
+    return in_array( $type['type'], get_allowed_mime_types(), true ) ? $type['ext'] : '';
+  }
+
   /**
   * Add an image from a URL to the Media Library.
   * @param string $url The URL of the image to be downloaded.
@@ -160,13 +171,11 @@ class Meow_MWAI_Services_Image {
     // A data: URL (Gemini returns those) has no file name: its "basename" is a slice of the
     // base64 payload, which ended up as the attachment's file name.
     $url_filename = strpos( $url, 'data:' ) === 0 ? '' : $path_parts['basename'];
-    $file_type = wp_check_filetype( $url_filename, null );
-    $allowed_types = get_allowed_mime_types();
-
     // For URLs without file extensions (like Google Gemini), default to PNG
     $extension = 'png';
-    if ( $file_type && $file_type['ext'] && in_array( $file_type['type'], $allowed_types ) ) {
-      $extension = $file_type['ext'];
+    $url_extension = $this->image_extension_of( $url_filename );
+    if ( $url_extension ) {
+      $extension = $url_extension;
     }
     elseif ( preg_match( '#^data:image/(png|jpe?g|webp|gif);#i', $url, $m ) ) {
       $extension = strtolower( $m[1] ) === 'jpeg' ? 'jpg' : strtolower( $m[1] );
@@ -177,12 +186,12 @@ class Meow_MWAI_Services_Image {
       if ( pathinfo( $filename, PATHINFO_EXTENSION ) === '' ) {
         $filename .= '.' . $extension;
       }
-      $custom_file_type = wp_check_filetype( $filename, null );
-      if ( !$custom_file_type || !in_array( $custom_file_type['type'], $allowed_types ) ) {
+      $custom_extension = $this->image_extension_of( $filename );
+      if ( !$custom_extension ) {
         throw new Exception( 'Invalid custom file type.' );
       }
       // Use the extension from the custom filename if valid
-      $extension = $custom_file_type['ext'];
+      $extension = $custom_extension;
       // Strip any directory components so a crafted filename (e.g.
       // "../../../evil.png") cannot escape the uploads directory. The
       // empty-filename branch below already sanitizes; this mirrors the
@@ -196,14 +205,18 @@ class Meow_MWAI_Services_Image {
     if ( !$image_data ) {
       throw new Exception( 'Could not download the image.' );
     }
+    // The server chooses its own Content-Type, so "image/..." proves nothing: a page or an SVG
+    // served as an image is still markup, and would run scripts once opened from the uploads folder.
+    if ( substr( ltrim( preg_replace( '/^\xEF\xBB\xBF/', '', substr( $image_data, 0, 2048 ) ), " \t\n\r\f\v\0" ), 0, 1 ) === '<' ) {
+      throw new Exception( 'The file at this URL is not an image.' );
+    }
     $upload_dir = wp_upload_dir();
 
     // Filename handling including 'generated_' prefix scenario
     if ( empty( $filename ) ) {
-      $filename = sanitize_file_name( $url_filename );
-      if ( empty( $extension ) ) { // This condition might now be redundant
-        $extension = $file_type['ext'];
-      }
+      // The name in the URL is kept only when it is an image's: "page.html" was saved as is,
+      // whatever it held (Wordfence report, 2026-11-17).
+      $filename = $url_extension ? sanitize_file_name( $url_filename ) : '';
       // Filename length check and prepend if conditions met
       if ( strlen( $filename ) > 32 || strlen( $filename ) < 4 || strpos( $filename, 'generated_' ) === 0 ) {
         $filename = uniqid( 'ai_', true ) . '.' . $extension;

@@ -1709,7 +1709,28 @@ class Meow_MWAI_Modules_Chatbot {
     }
 
     $containerClass = !empty( $frontParams['window'] ) ? 'mwai-chatbot-container mwai-popup-container' : 'mwai-chatbot-container';
-    return "<div class='{$containerClass}' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
+    $config = $this->container_config( $frontParams, $frontSystem, $theme );
+    return "<div class='{$containerClass}' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'>{$config}</div>";
+  }
+
+  /**
+   * The settings of a container, as the one copy the front-end script trusts.
+   *
+   * The script used to trust the data-* attributes of any element with the container's class,
+   * and those can be written by hand: a Contributor's post keeps a div with class and data-*
+   * (core KSES allows them), so a forged container handed the script its own blocks, actions
+   * and HTML, which run code (Patchstack 40511). A script element cannot be written by a user
+   * without unfiltered_html, so the settings printed here are the server's. It sits inside the
+   * container, which keeps page caches, fragment caches and AJAX-loaded content working.
+   *
+   * The data-* attributes stay for pages cached before this change and for custom code that
+   * reads them: a container without this element still mounts, but restricted (no blocks, no
+   * actions, no shortcut callbacks from it).
+   * TODO: after 2027-05-21, stop printing the data-* attributes (the script reads this only).
+   */
+  private function container_config( $params, $system, $theme ) {
+    $json = wp_json_encode( [ 'params' => $params, 'system' => $system, 'theme' => $theme ], JSON_HEX_TAG | JSON_HEX_AMP );
+    return $json ? '<script type="application/json" class="mwai-config">' . $json . '</script>' : '';
   }
 
   public function chatbot_discussions( $atts ) {
@@ -1808,7 +1829,8 @@ class Meow_MWAI_Modules_Chatbot {
     $jsonFrontSystem = htmlspecialchars( json_encode( $frontSystem ), ENT_QUOTES, 'UTF-8' );
     $jsonFrontTheme = htmlspecialchars( json_encode( $theme ), ENT_QUOTES, 'UTF-8' );
 
-    return "<div class='mwai-discussions-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'></div>";
+    $config = $this->container_config( $frontParams, $frontSystem, $theme );
+    return "<div class='mwai-discussions-container' data-params='{$jsonFrontParams}' data-system='{$jsonFrontSystem}' data-theme='{$jsonFrontTheme}'>{$config}</div>";
   }
 
   public function clean_params( &$params ) {

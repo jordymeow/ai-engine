@@ -146,10 +146,28 @@ class Meow_MWAI_Modules_Editor_Assistant {
     return new WP_REST_Response( $data, $status );
   }
 
+  // Thinking counts against Max Tokens: with the old fixed 4096, Claude thought through a long
+  // post, ran out, and the assistant showed an empty or half-finished reply (Peter Deegan,
+  // 2026-11). Use what the model allows, up to a ceiling that keeps a runaway reply affordable.
+  private const MAX_TOKENS = 16384;
+
+  private function max_tokens_for( $query ) {
+    try {
+      $this->core->validate_env_model( $query );
+      $engine = Meow_MWAI_Engines_Factory::get( $this->core, $query->envId );
+      $info = $engine ? $engine->retrieve_model_info( $query->model ) : null;
+      $limit = (int) ( $info['maxCompletionTokens'] ?? 0 );
+      return $limit > 4096 ? min( self::MAX_TOKENS, $limit ) : 4096;
+    }
+    catch ( Throwable $e ) {
+      return 4096;
+    }
+  }
+
   protected function build_response( $reply ) {
     return [
       'success' => true,
-      'reply' => $reply->result,
+      'reply' => $reply->result . Meow_MWAI_Core::get_truncated_notice( $reply, 'assistant' ),
       'actions' => [],
       'feedbackId' => null,
       'usage' => $reply->usage,
@@ -187,6 +205,7 @@ class Meow_MWAI_Modules_Editor_Assistant {
         $queryParams['chatId'] = $chatId;
       }
       $query->inject_params( $queryParams );
+      $query->set_max_tokens( $this->max_tokens_for( $query ) );
       $query = apply_filters( 'mwai_chatbot_query', $query, $queryParams );
 
       Meow_MWAI_Logging::log( "Editor Assistant: Submitting query: \"{$newMessage}\"" );

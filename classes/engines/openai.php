@@ -315,8 +315,16 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
             ]
           ];
 
-          // No context here: the stored response behind previous_response_id already holds
-          // the first request's input, Knowledge context included. Adding it again doubled it.
+          // Each new message has its own Knowledge context, retrieved for that message: the
+          // stored response behind previous_response_id only holds the context of earlier
+          // turns. Dropping it (3.8.8 to 3.9.4) made follow-up questions miss the entries that
+          // were found for them, and the model said the information did not exist.
+          if ( !empty( $query->context ) ) {
+            array_unshift( $body['input'][0]['content'], [
+              'type' => 'input_text',
+              'text' => $this->core->frame_context( $query->context ) . "\n\n"
+            ] );
+          }
         }
       }
       else {
@@ -2870,14 +2878,19 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
 
       $refId = $this->core->files->upload_file( $tmpFile, $filename, $purpose, $metadata, $query->envId );
 
-      // Update the file's refId to match the OpenAI file ID
-      $internalFileId = $this->core->files->get_id_from_refId( $refId );
-      // upload_file() drops reserved keys like file_id, so it is written directly.
-      $this->core->files->add_metadata( $internalFileId, 'file_id', $fileId );
-      $this->core->files->update_refId( $internalFileId, $fileId );
+      // The URL is read under the refId upload_file() gave, before it is swapped. With files
+      // stored in the Media Library there is no Files row to swap, so reading it under the
+      // OpenAI file ID found nothing and the link became "Download temporarily unavailable"
+      // although the file was saved (Dwight Taylor, 2026-11-14).
+      $publicUrl = $this->core->files->get_url( $refId );
 
-      // Get the public URL
-      $publicUrl = $this->core->files->get_url( $fileId );
+      // Uploads target: the row takes the OpenAI file ID as its refId.
+      $internalFileId = $this->core->files->get_id_from_refId( $refId );
+      if ( $internalFileId ) {
+        // upload_file() drops reserved keys like file_id, so it is written directly.
+        $this->core->files->add_metadata( $internalFileId, 'file_id', $fileId );
+        $this->core->files->update_refId( $internalFileId, $fileId );
+      }
 
       // Clean up temp file
       @unlink( $tmpFile );

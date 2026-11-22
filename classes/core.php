@@ -160,7 +160,7 @@ class Meow_MWAI_Core {
       new Meow_MWAI_Labs_MCP( $this );
 
       // Core - Core WordPress MCP tools
-      if ( $this->get_option( 'mcp_core' ) ) {
+      if ( $this->mcp_set_on( 'mcp_core' ) ) {
         new Meow_MWAI_Labs_MCP_Core( $this );
         new Meow_MWAI_Labs_MCP_Site();
         new Meow_MWAI_Labs_MCP_Seo();
@@ -173,6 +173,8 @@ class Meow_MWAI_Core {
       // Abilities - tools registered by plugins through the WordPress Abilities API
       if ( $this->get_option( 'mcp_abilities' ) ) {
         new Meow_MWAI_Labs_MCP_Abilities();
+        // Breakdance's own tools arrive through its abilities: what the bridge alone leaves out.
+        new Meow_MWAI_Labs_MCP_Breakdance();
       }
 
       // Dynamic REST - WordPress REST API MCP tools
@@ -182,47 +184,47 @@ class Meow_MWAI_Core {
       }
 
       // Themes - Pro theme management MCP tools
-      if ( $this->get_option( 'mcp_themes' ) && class_exists( 'MeowPro_MWAI_MCP_Theme' ) ) {
+      if ( $this->mcp_set_on( 'mcp_themes' ) && class_exists( 'MeowPro_MWAI_MCP_Theme' ) ) {
         new MeowPro_MWAI_MCP_Theme( $this );
       }
 
       // Plugins - Pro plugin management MCP tools
-      if ( $this->get_option( 'mcp_plugins' ) && class_exists( 'MeowPro_MWAI_MCP_Plugin' ) ) {
+      if ( $this->mcp_set_on( 'mcp_plugins' ) && class_exists( 'MeowPro_MWAI_MCP_Plugin' ) ) {
         new MeowPro_MWAI_MCP_Plugin( $this );
       }
 
       // Database - Pro database query MCP tools
-      if ( $this->get_option( 'mcp_database' ) && class_exists( 'MeowPro_MWAI_MCP_Database' ) ) {
+      if ( $this->mcp_set_on( 'mcp_database' ) && class_exists( 'MeowPro_MWAI_MCP_Database' ) ) {
         new MeowPro_MWAI_MCP_Database( $this );
       }
 
       // AI Engine - Pro MCP tools to manage AI Engine itself (chatbots, knowledge, settings...)
-      if ( $this->get_option( 'mcp_aiengine' ) && class_exists( 'MeowPro_MWAI_MCP_AIEngine' ) ) {
+      if ( $this->mcp_set_on( 'mcp_aiengine' ) && class_exists( 'MeowPro_MWAI_MCP_AIEngine' ) ) {
         new MeowPro_MWAI_MCP_AIEngine( $this );
       }
 
       // Polylang - Pro multilingual MCP tools (only if Polylang is active)
-      if ( $this->get_option( 'mcp_polylang' ) && class_exists( 'MeowPro_MWAI_MCP_Polylang' ) && function_exists( 'pll_get_post_language' ) ) {
+      if ( $this->mcp_set_on( 'mcp_polylang' ) && class_exists( 'MeowPro_MWAI_MCP_Polylang' ) && function_exists( 'pll_get_post_language' ) ) {
         new MeowPro_MWAI_MCP_Polylang( $this );
       }
 
       // WPML - Pro multilingual MCP tools (only if WPML is active)
-      if ( $this->get_option( 'mcp_wpml' ) && class_exists( 'MeowPro_MWAI_MCP_Wpml' ) && defined( 'ICL_SITEPRESS_VERSION' ) ) {
+      if ( $this->mcp_set_on( 'mcp_wpml' ) && class_exists( 'MeowPro_MWAI_MCP_Wpml' ) && defined( 'ICL_SITEPRESS_VERSION' ) ) {
         new MeowPro_MWAI_MCP_Wpml( $this );
       }
 
       // Elementor - Pro page editing MCP tools (only if Elementor is active)
-      if ( $this->get_option( 'mcp_elementor' ) && class_exists( 'MeowPro_MWAI_MCP_Elementor' ) && defined( 'ELEMENTOR_VERSION' ) ) {
+      if ( $this->mcp_set_on( 'mcp_elementor' ) && class_exists( 'MeowPro_MWAI_MCP_Elementor' ) && defined( 'ELEMENTOR_VERSION' ) ) {
         new MeowPro_MWAI_MCP_Elementor( $this );
       }
 
       // Beaver Builder - Pro page editing MCP tools (only if Beaver Builder is active)
-      if ( $this->get_option( 'mcp_beaver' ) && class_exists( 'MeowPro_MWAI_MCP_Beaver' ) && class_exists( 'FLBuilderModel' ) ) {
+      if ( $this->mcp_set_on( 'mcp_beaver' ) && class_exists( 'MeowPro_MWAI_MCP_Beaver' ) && class_exists( 'FLBuilderModel' ) ) {
         new MeowPro_MWAI_MCP_Beaver( $this );
       }
 
       // WooCommerce - Pro WooCommerce store management MCP tools (only if WooCommerce is active)
-      if ( $this->get_option( 'mcp_woocommerce' ) && class_exists( 'MeowPro_MWAI_MCP_WooCommerce' ) && class_exists( 'WooCommerce' ) ) {
+      if ( $this->mcp_set_on( 'mcp_woocommerce' ) && class_exists( 'MeowPro_MWAI_MCP_WooCommerce' ) && class_exists( 'WooCommerce' ) ) {
         new MeowPro_MWAI_MCP_WooCommerce( $this );
       }
     }
@@ -1181,7 +1183,8 @@ class Meow_MWAI_Core {
         ? __( 'This answer was cut short because it reached its length limit. Just ask me to continue.', 'ai-engine' )
         : __( 'This answer was cut short because it reached its length limit.', 'ai-engine' );
     }
-    if ( current_user_can( 'manage_options' ) && $maxTokens ) {
+    // The Editor Assistant has no Max Tokens setting to point an admin to.
+    if ( $context !== 'assistant' && current_user_can( 'manage_options' ) && $maxTokens ) {
       // translators: %d is the Max Tokens value of the chatbot or form.
       $notice .= ' ' . sprintf( __( 'Admins: raise Max Tokens (currently %d) in its settings.', 'ai-engine' ), $maxTokens );
     }
@@ -1509,6 +1512,23 @@ class Meow_MWAI_Core {
     }
 
     return null;
+  }
+
+  // The tool sets Beast Mode turns on. Abilities and Dynamic REST stay out: they expose other
+  // plugins' code, which "every AI Engine tool" must never quietly include.
+  public const MCP_BEAST_SETS = [ 'mcp_core', 'mcp_plugins', 'mcp_themes', 'mcp_database', 'mcp_aiengine',
+    'mcp_woocommerce', 'mcp_elementor', 'mcp_beaver', 'mcp_polylang', 'mcp_wpml' ];
+
+  /**
+  * Whether an MCP tool set is on: by its own switch, or by Beast Mode (Pro), which turns on every
+  * curated set, including the ones future versions add to MCP_BEAST_SETS. Always ask this, never
+  * the option alone.
+  */
+  public function mcp_set_on( $option ) {
+    if ( $this->get_option( $option ) ) {
+      return true;
+    }
+    return in_array( $option, self::MCP_BEAST_SETS, true ) && $this->get_option( 'mcp_beast' ) && class_exists( 'MeowPro_MWAI_Core' );
   }
 
   public function get_chatbot( $botId ) {
@@ -1970,7 +1990,7 @@ class Meow_MWAI_Core {
       [
         'slug' => 'mwai-better-links',
         'name' => 'Better Links',
-        'description' => 'Validate internal and external links and map specific terms to custom URLs, ensuring smoother navigation and references.',
+        'description' => 'Adds links to your most relevant posts and products when visitors mention your keywords, and removes broken links from replies.',
         'install_url' => 'https://meowapps.com/products/mwai-better-links/',
         'settings_url' => null,
         'stars' => 3,

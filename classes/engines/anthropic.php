@@ -226,23 +226,29 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
    * @param Meow_MWAI_Query_Text $query The query to build messages from
    * @return array Messages formatted for Anthropic API
    */
-  protected function build_messages( $query ) {
-    $messages = [];
-
-    // Add conversation history (previous messages)
-    foreach ( $query->messages as $message ) {
-      $messages[] = $message;
+  /**
+   * The earlier messages of the conversation, as every request of one reply must send them:
+   * limited to maxMessages, and starting with a user message (Anthropic requires it).
+   *
+   * The first request and its follow-ups after a function call have to send the SAME history.
+   * The follow-up used to send it whole while the first request sent the last maxMessages:
+   * past that limit, a replayed thinking block no longer matched what came before it, and
+   * Claude 5.5 refused the follow-up ("Invalid signature in thinking block... first at
+   * messages.0", HS 3521131523). Short conversations hid it.
+   */
+  private function history_messages( $messages, $maxMessages ) {
+    $messages = is_array( $messages ) ? array_values( $messages ) : [];
+    if ( !empty( $maxMessages ) ) {
+      $messages = array_slice( $messages, -(int) $maxMessages );
     }
-
-    // Limit message history if maxMessages is set
-    if ( !empty( $query->maxMessages ) ) {
-      $messages = array_slice( $messages, -$query->maxMessages );
-    }
-
-    // Anthropic requires first message to have 'user' role
-    if ( !empty( $messages ) && $messages[0]['role'] !== 'user' ) {
+    if ( !empty( $messages ) && ( $messages[0]['role'] ?? '' ) !== 'user' ) {
       array_shift( $messages );
     }
+    return $messages;
+  }
+
+  protected function build_messages( $query ) {
+    $messages = $this->history_messages( $query->messages, $query->maxMessages );
 
     // =====================================================================
     // FILE UPLOAD: Process all attachments (unified approach)
@@ -513,11 +519,9 @@ class Meow_MWAI_Engines_Anthropic extends Meow_MWAI_Engines_ChatML {
       // message is replayed by the blocks loop below. Never pop a trailing
       // assistant entry here: it is genuine history (its removal made Claude
       // re-answer the PREVIOUS question with the previous tool parameters).
-      $history = is_array( $query->messages ) ? $query->messages : [];
-      // Anthropic requires the first message to have the 'user' role.
-      if ( !empty( $history ) && ( $history[0]['role'] ?? '' ) !== 'user' ) {
-        array_shift( $history );
-      }
+      // The same slice as the first request sent (see history_messages). The follow-up query
+      // does not inherit maxMessages, so the limit is read from the first query.
+      $history = $this->history_messages( $query->messages, $original->maxMessages ?? null );
       if ( empty( $history ) ) {
         $body['messages'][] = [ 'role' => 'user', 'content' => $query->message ];
       }

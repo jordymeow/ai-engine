@@ -560,6 +560,17 @@ class Meow_MWAI_Modules_Files {
         $file_array = [ 'name' => $unique_filename, 'tmp_name' => $path ];
       }
 
+      // WordPress checks the type, but it accepts markup under text extensions (.rtx, .txt,
+      // .csv) when the server reads it as plain text, so our own check runs here too. Without
+      // it, a Subscriber sent target=library through the Public API and stored a page that
+      // browsers ran from the uploads folder (same family as Patchstack 39350, 2026-11-17).
+      if ( !$this->check_file_content( $file_array['tmp_name'], $filename ) ) {
+        if ( isset( $tmp ) ) {
+          wp_delete_file( $tmp );
+        }
+        throw new Exception( 'File type is not allowed.' );
+      }
+
       // media_handle_sideload() generates the attachment metadata itself, so an AI image
       // is flagged on add_attachment, which fires before that (see add_image_from_url).
       $flag_generated = function ( $attachment_id ) {

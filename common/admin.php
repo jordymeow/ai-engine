@@ -898,6 +898,9 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
         'cron_disabled' => defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON,
         // Minutes the oldest scheduled task is overdue: a few is normal, hours means cron isn't running.
         'cron_overdue' => $this->cron_overdue_minutes(),
+        // How many tasks are late out of how many, and the oldest one: a single stuck task
+        // (often left by a removed plugin) is not a cron that stopped.
+        'cron_late' => $this->cron_late_tasks(),
         'theme' => $theme->get( 'Name' ) . ' ' . $theme->get( 'Version' ),
         'locale' => get_locale(),
         'timezone' => wp_timezone_string(),
@@ -907,10 +910,38 @@ if ( !class_exists( 'MeowKit_MWAI_Admin' ) ) {
 
     private function cron_overdue_minutes() {
       $crons = function_exists( '_get_cron_array' ) ? _get_cron_array() : [];
-      if ( !is_array( $crons ) || empty( $crons ) ) {
+      // A timestamp can stay behind with no task in it (a plugin that edits the cron list
+      // itself): WordPress never runs or removes it, so it is not a late task (wp.org, 2026-11-22).
+      $crons = is_array( $crons ) ? array_filter( $crons, function ( $hooks ) {
+        return is_array( $hooks ) && !empty( $hooks );
+      } ) : [];
+      if ( empty( $crons ) ) {
         return 0;
       }
       return max( 0, (int) floor( ( time() - min( array_keys( $crons ) ) ) / 60 ) );
+    }
+
+    private function cron_late_tasks() {
+      $crons = function_exists( '_get_cron_array' ) ? _get_cron_array() : [];
+      $out = [ 'late' => 0, 'total' => 0, 'hook' => '' ];
+      if ( !is_array( $crons ) || empty( $crons ) ) {
+        return $out;
+      }
+      ksort( $crons, SORT_NUMERIC );
+      $limit = time() - HOUR_IN_SECONDS;
+      foreach ( $crons as $time => $hooks ) {
+        if ( !is_array( $hooks ) ) {
+          continue;
+        }
+        $out['total'] += count( $hooks );
+        if ( $time < $limit ) {
+          $out['late'] += count( $hooks );
+          if ( $out['hook'] === '' ) {
+            $out['hook'] = (string) array_key_first( $hooks );
+          }
+        }
+      }
+      return $out;
     }
 
     public function admin_meow_apps() {

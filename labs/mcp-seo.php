@@ -11,7 +11,7 @@
 class Meow_MWAI_Labs_MCP_Seo {
   public const FIELDS = [ 'title', 'description', 'focus_keyword', 'canonical', 'noindex', 'nofollow', 'og_title', 'og_description', 'og_image' ];
   private const URL_FIELDS = [ 'canonical', 'og_image' ];
-  private const FLAG_FIELDS = [ 'noindex', 'nofollow' ];
+  private const FLAG_FIELDS = [ 'noindex', 'nofollow', 'title_no_site_name' ];
 
   public function __construct() {
     add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
@@ -127,7 +127,8 @@ class Meow_MWAI_Labs_MCP_Seo {
           'focus_keyword' => [ '_yoast_wpseo_focuskw', 'text' ], 'canonical' => [ '_yoast_wpseo_canonical', 'text' ],
           'noindex' => [ '_yoast_wpseo_meta-robots-noindex', 'flag:1' ], 'nofollow' => [ '_yoast_wpseo_meta-robots-nofollow', 'flag:1' ],
           'og_title' => [ '_yoast_wpseo_opengraph-title', 'text' ], 'og_description' => [ '_yoast_wpseo_opengraph-description', 'text' ],
-          'og_image' => [ '_yoast_wpseo_opengraph-image', 'text' ] ] ),
+          'og_image' => [ '_yoast_wpseo_opengraph-image', 'text' ],
+          'twitter_title' => [ '_yoast_wpseo_twitter-title', 'text' ], 'twitter_description' => [ '_yoast_wpseo_twitter-description', 'text' ] ] ),
         'term' => self::yoast_terms(),
         'after' => [ __CLASS__, 'yoast_refresh' ] ];
     }
@@ -137,7 +138,8 @@ class Meow_MWAI_Labs_MCP_Seo {
         'focus_keyword' => [ 'rank_math_focus_keyword', 'text' ], 'canonical' => [ 'rank_math_canonical_url', 'text' ],
         'noindex' => [ 'rank_math_robots', 'token:noindex' ], 'nofollow' => [ 'rank_math_robots', 'token:nofollow' ],
         'og_title' => [ 'rank_math_facebook_title', 'text' ], 'og_description' => [ 'rank_math_facebook_description', 'text' ],
-        'og_image' => [ 'rank_math_facebook_image', 'text' ] ] );
+        'og_image' => [ 'rank_math_facebook_image', 'text' ],
+        'twitter_title' => [ 'rank_math_twitter_title', 'text' ], 'twitter_description' => [ 'rank_math_twitter_description', 'text' ] ] );
       $adapters['rank_math'] = [ 'name' => 'Rank Math', 'post' => $rank_math, 'term' => $rank_math ];
     }
     if ( function_exists( 'aioseo' ) && class_exists( '\AIOSEO\Plugin\Common\Models\Post' ) ) {
@@ -149,7 +151,8 @@ class Meow_MWAI_Labs_MCP_Seo {
         'focus_keyword' => [ '_seopress_analysis_target_kw', 'text' ], 'canonical' => [ '_seopress_robots_canonical', 'text' ],
         'noindex' => [ '_seopress_robots_index', 'flag:yes' ], 'nofollow' => [ '_seopress_robots_follow', 'flag:yes' ],
         'og_title' => [ '_seopress_social_fb_title', 'text' ], 'og_description' => [ '_seopress_social_fb_desc', 'text' ],
-        'og_image' => [ '_seopress_social_fb_img', 'text' ] ] );
+        'og_image' => [ '_seopress_social_fb_img', 'text' ],
+        'twitter_title' => [ '_seopress_social_twitter_title', 'text' ], 'twitter_description' => [ '_seopress_social_twitter_desc', 'text' ] ] );
       $adapters['seopress'] = [ 'name' => 'SEOPress', 'post' => $seopress, 'term' => $seopress ];
     }
     if ( defined( 'THE_SEO_FRAMEWORK_VERSION' ) ) {
@@ -158,7 +161,10 @@ class Meow_MWAI_Labs_MCP_Seo {
           'title' => [ '_genesis_title', 'text' ], 'description' => [ '_genesis_description', 'text' ],
           'canonical' => [ '_genesis_canonical_uri', 'text' ], 'noindex' => [ '_genesis_noindex', 'flag:1' ],
           'nofollow' => [ '_genesis_nofollow', 'flag:1' ], 'og_title' => [ '_open_graph_title', 'text' ],
-          'og_description' => [ '_open_graph_description', 'text' ], 'og_image' => [ '_social_image_url', 'text' ] ] ),
+          'og_description' => [ '_open_graph_description', 'text' ], 'og_image' => [ '_social_image_url', 'text' ],
+          'twitter_title' => [ '_twitter_title', 'text' ], 'twitter_description' => [ '_twitter_description', 'text' ],
+          // Its per-post "Remove the site title?" checkbox: sites that write full titles rely on it.
+          'title_no_site_name' => [ '_tsf_title_no_blogname', 'flag:1' ] ] ),
         'term' => self::packed( 'autodescription-term-settings', [
           'title' => [ 'doctitle', 'text' ], 'description' => [ 'description', 'text' ], 'canonical' => [ 'canonical', 'text' ],
           'noindex' => [ 'noindex', 'flag:1' ], 'nofollow' => [ 'nofollow', 'flag:1' ], 'og_title' => [ 'og_title', 'text' ],
@@ -309,7 +315,7 @@ class Meow_MWAI_Labs_MCP_Seo {
     return [
       'wp_get_seo' => [
         'name' => 'wp_get_seo',
-        'description' => 'Read the SEO fields of posts or terms from the SEO plugin the site uses (Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework, Slim SEO or SEO Engine, detected): title, description, focus_keyword, canonical, noindex, nofollow, og_title, og_description, og_image. null means the plugin default applies (usually the post title and excerpt). "ids" (up to 50) audits many posts at once.',
+        'description' => 'Read the SEO fields of posts or terms from the SEO plugin the site uses (Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework, Slim SEO or SEO Engine, detected): title, description, focus_keyword, canonical, noindex, nofollow, og_title, og_description, og_image, and where the plugin has them twitter_title, twitter_description and title_no_site_name (The SEO Framework: the title is shown without the site name). null means the plugin default applies (usually the post title and excerpt). "ids" (up to 50) audits many posts at once.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => $target + [ 'ids' => [ 'type' => 'array', 'items' => [ 'type' => 'integer' ], 'description' => 'Several post IDs at once (max 50).' ] ],
@@ -318,7 +324,7 @@ class Meow_MWAI_Labs_MCP_Seo {
       ],
       'wp_update_seo' => [
         'name' => 'wp_update_seo',
-        'description' => 'Set SEO fields of a post or term in the site SEO plugin (see wp_get_seo). "fields": title, description, focus_keyword, canonical, og_title, og_description, og_image (null clears one so the plugin default applies), noindex, nofollow (true or false). Fields the plugin lacks are listed as skipped. Keep titles under about 60 characters and descriptions around 150. Can be undone with mcp_undo_change.',
+        'description' => 'Set SEO fields of a post or term in the site SEO plugin (see wp_get_seo). "fields": title, description, focus_keyword, canonical, og_title, og_description, og_image, twitter_title, twitter_description (null clears one so the plugin default applies), noindex, nofollow, title_no_site_name (true or false). Fields the plugin lacks are listed as skipped. Keep titles under about 60 characters and descriptions around 150. Can be undone with mcp_undo_change.',
         'inputSchema' => [
           'type' => 'object',
           'properties' => $target + [ 'fields' => [ 'type' => 'object', 'description' => 'The fields to set.', 'additionalProperties' => true ] ],

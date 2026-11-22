@@ -55,6 +55,18 @@ class Meow_MWAI_Labs_MCP_Shortcodes {
     return $out;
   }
 
+  // The shortcode builder a page was made with ("Avada", "Divi"...), read from its content, or
+  // null. Agents edited such pages as plain content and lost the layout, or wrote new content
+  // next to it, because nothing told them the page was a builder's (two Avada users, 2026-11).
+  public static function builder_of( string $content ): ?string {
+    $names = [ 'fusion_' => 'Avada', 'et_pb_' => 'Divi', 'vc_' => 'WPBakery', 'ux_' => 'Flatsome' ];
+    if ( !preg_match( '/\[(fusion_|et_pb_|vc_|ux_)[a-z0-9_]+[\s\]]/i', $content, $m ) ) {
+      return null;
+    }
+    $name = $names[ strtolower( $m[1] ) ];
+    return in_array( $name, self::builders(), true ) ? $name : null;
+  }
+
   #region Parse and serialize
   // A node: [ 'tag', 'raw' (opening tag as written), 'atts', 'parts' (strings and nodes), 'closed' ].
   public static function parse( string $content ): array {

@@ -1382,7 +1382,9 @@ class Meow_MWAI_Labs_MCP {
             // Check for complex types that need additional schema details
             $complex_types = array_intersect( $type_array, [ 'object', 'array' ] );
             if ( !empty( $complex_types ) ) {
-              error_log(
+              // Only with MCP logging on: this runs on every tools/list, and a tool from another
+              // plugin (through abilities) wrote the same four lines five times a second.
+              $this->logging && error_log(
                 '[AI Engine MCP] ⚠️ Tool "' . $tool_name . '" property "' . $prop_name .
                 '" has problematic union type with complex types: [' . implode( ', ', $type_array ) .
                 ']. This breaks ChatGPT. Auto-fixing by removing type constraint.'
@@ -1888,7 +1890,13 @@ class Meow_MWAI_Labs_MCP {
   // A real tool call is the moment MCP has proven itself, so the review notice
   // (common/ratings.php) shows two days later instead of weeks. A dismissed or
   // completed notice is dated years ahead and is left alone.
+  // Once per site only: this ran on every tool call, so "Later" (two to six weeks) was pulled
+  // back to two days by the next call, and the ask kept returning for people who use MCP daily.
   private function bring_review_notice_forward() {
+    if ( get_option( 'mwai_review_brought_forward' ) ) {
+      return;
+    }
+    update_option( 'mwai_review_brought_forward', time(), true );
     $date = (int) get_option( 'mwai_rating_date' );
     $soon = time() + 2 * DAY_IN_SECONDS;
     if ( empty( $date ) || ( $date > $soon && $date < time() + YEAR_IN_SECONDS ) ) {

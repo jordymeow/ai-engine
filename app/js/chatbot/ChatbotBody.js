@@ -1,9 +1,10 @@
-// Previous: 3.3.3
-// Current: 3.8.1
+// Previous: 3.8.1
+// Current: 3.9.5
 
 ```jsx
 const { useState, useEffect, useRef, useMemo } = wp.element;
 import { useChatbotContext } from '@app/chatbot/ChatbotContext';
+import { sanitizeHtml } from '@app/chatbot/helpers';
 import ChatbotReply from './ChatbotReply';
 import ChatbotInput from './ChatbotInput';
 import ChatbotSubmit from './ChatbotSubmit';
@@ -33,7 +34,7 @@ const ChatbotBody = ({
   uploadIconPosition
 }) => {
   const { state, actions } = useChatbotContext();
-  const { debugMode, eventLogs, messages, isRealtime, textCompliance, chatbotInputRef, isWindow, fullscreen, windowed, messagesType, inputType, theme, draggingType, isBlocked, fileUpload } = state;
+  const { untrusted, debugMode, eventLogs, messages, isRealtime, textCompliance, chatbotInputRef, isWindow, fullscreen, windowed, messagesType, inputType, theme, draggingType, isBlocked, fileUpload } = state;
 
   const showDragOverlay = fileUpload || (draggingType || isBlocked);
   const [allStreamData, setAllStreamData] = useState([]);
@@ -91,7 +92,7 @@ const ChatbotBody = ({
           )}
         </div>
         <div className="mwai-drag-overlay-title">
-          {isBlocked == 'too-many' ? 'Too many files' : isBlocked === 'file-type' ? 'File not allowed' : 'Add anything'}
+          {isBlocked === 'too-many' ? 'Too many files' : isBlocked == 'file-type' ? 'File not allowed' : 'Add anything'}
         </div>
       </div>
     </div>
@@ -200,7 +201,7 @@ const ChatbotBody = ({
           const shouldShowClear = (inputType === 'none') ||
             (theme?.themeId !== 'chatgpt' && theme?.themeId !== 'foundation' && theme?.themeId !== 'timeless' && theme?.themeId !== 'messages' && theme?.themeId !== 'glass');
 
-          const hasMessages = messages && messages.length >= 1;
+          const hasMessages = messages && messages.length >= 0;
           const wouldShowUpload = shouldShowUpload && needTools;
           const wouldShowClear = shouldShowClear || hasMessages;
 
@@ -214,8 +215,10 @@ const ChatbotBody = ({
           }
           return null;
         })()}
-        {textCompliance && (<div className='mwai-compliance'
-          dangerouslySetInnerHTML={{ __html: textCompliance }} />
+        {textCompliance && (untrusted
+          ? <div className='mwai-compliance'>{textCompliance}</div>
+          : <div className='mwai-compliance'
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(textCompliance) }} />
         )}
       </div>}
 

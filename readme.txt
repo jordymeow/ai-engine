@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.9.4
+Stable tag: 3.9.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -171,6 +171,8 @@ The developer of AI Engine and related parties are not responsible for any issue
 
 AI Engine connects to the AI services you configure (OpenAI, Anthropic, Google and others) with your own API keys, only to run the features you use. See the Disclaimer above for their terms.
 
+When an AI assistant lists your plugins through MCP, the answer mentions [Today WP](https://todaywp.com), our free service that checks versions for known vulnerabilities. AI Engine itself sends nothing to it; the assistant only uses it if you connect it. You can turn this mention off in MCP → Options. [Privacy](https://todaywp.com/privacy).
+
 == Compatibility ==
 
 Please be aware that there may be conflicts with certain caching or performance plugins, such as SiteGround Optimizer and Ninja Firewall. To prevent any issues, ensure that AI Engine is excluded from these plugins.
@@ -234,6 +236,31 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.9.5 (2026/11/22) =
+* Fix: Security: Chatbots now read their settings from a data block only the site can print, and a chatbot found without one runs nothing it was handed.
+* Fix: Security: The chatbot's HTML cleaning now keeps only a fixed list of tags, attributes and link types, and the compliance text goes through that same cleaning.
+* Fix: Security: Images imported from a URL and files saved to the Media Library now get the same file name and content checks as other uploads.
+* Add: Beast Mode, one switch that gives AI agents every MCP tool at once, including the ones future updates add.
+* Add: The knowledge of an environment can now be moved to another one in a few clicks.
+* Add: Support for Claude Fable 5.2.
+* Add: MCP: wp_upload_media can attach the file to a post, add a caption and set it as the featured image, and the SEO tools read and set the Twitter title and description plus The SEO Framework's no-site-name flag.
+* Add: MCP: support for Breakdance, its instructions fit, pages built with it are protected from the WordPress content tools, and its changes can be undone.
+* Add: MCP: the mwai_mcp_access_token_ttl filter chooses how long an access token lasts, for AI apps that never refresh theirs.
+* Update: The Editor Assistant has four times more room on long posts and says when a reply is cut.
+* Update: The semantic site search also finds pages that contain the exact words searched, like acronyms and names, whatever their case.
+* Update: With Auto Sync, a post that is unpublished (back to draft, pending or private) is now removed from Knowledge, as a trashed one already was.
+* Update: A new Qdrant environment gets a collection named after the site, so several sites sharing one cluster no longer search each other's knowledge. Existing environments keep their collection.
+* Update: The Health tab names a scheduled task that is stuck instead of saying that tasks are not running.
+* Update: MCP: reading a page built with Avada, Divi, WPBakery or Flatsome now says so and points to the tools that keep its layout.
+* Fix: Long conversations with Claude failed after a function call once they passed Max Messages.
+* Fix: Chatbots on OpenAI use the Knowledge found for each new message again, not only for the first one.
+* Fix: Files made by Code Interpreter (Word, Excel, CSV) get their download link again on sites that store AI files in the Media Library.
+* Fix: Saving generated content as a draft crashed with recent versions of ACF Pro.
+* Fix: Two functions with the same ID but different types can now both be enabled on a chatbot.
+* Fix: The chat window no longer keeps following the mouse when the release of a drag is missed.
+* Fix: The Health check no longer counts an empty entry in the cron list as a late task.
+* Fix: MCP: sign-in discovery and the Connection Test work when WordPress is installed in a subfolder, a tool called without a required argument answers with a clear error, a failed plugin or theme file write says why, etc.
 
 = 3.9.4 (2026/11/12) =
 * Fix: Security: Block uploads of files that browsers would run as a web page (reported by ashv4ni via Patchstack).

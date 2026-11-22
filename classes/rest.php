@@ -1173,16 +1173,18 @@ class Meow_MWAI_Rest {
         $message = sprintf( __( 'You are not allowed to create content of the type "%s".', 'ai-engine' ), $postType );
         return $this->create_rest_response( [ 'success' => false, 'message' => $message ], 403 );
       }
-      $post = new stdClass();
-      $post->post_title = $title;
-      $post->post_excerpt = $excerpt;
-      $post->post_content = $content;
-      $post->post_status = 'draft';
-      $post->post_type = $postType;
+      // An array, as WordPress documents it: plugins hooked on wp_insert_post_data (ACF Pro)
+      // read the post they are given as one, and an object made them crash (HS 3518279629).
       // TODO: Let's try to avoid using Markdown to create the Post
       // Instead, we should create Gutenberg Blocks, or simple HTML.
       // Then, we can get rid of the library for Markdown.
-      $post->post_content = $this->core->markdown_to_html( $post->post_content );
+      $post = [
+        'post_title' => $title,
+        'post_excerpt' => $excerpt,
+        'post_content' => $this->core->markdown_to_html( $content ),
+        'post_status' => 'draft',
+        'post_type' => $postType,
+      ];
       $postId = wp_insert_post( $post, true );
       if ( is_wp_error( $postId ) ) {
         throw new Exception( $postId->get_error_message() );

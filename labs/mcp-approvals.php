@@ -73,6 +73,10 @@ class Meow_MWAI_Labs_MCP_Approvals {
           return $live . 'Create it as a draft; the owner publishes it.';
         }
       }
+      // An upload is safe; making it the featured image of a live post is a change to that post.
+      if ( $tool === 'wp_upload_media' && !empty( $args['featured'] ) && !empty( $args['post_id'] ) && self::is_live( (int) $args['post_id'] ) ) {
+        return $live . 'Post #' . (int) $args['post_id'] . ' is live: upload the file without "featured", and let the owner set it.';
+      }
       if ( $tool === 'wc_create_product' && !isset( $args['status'] ) ) {
         $args['status'] = 'draft';
       }

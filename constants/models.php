@@ -1436,6 +1436,28 @@ define( 'MWAI_OPENAI_MODELS', [
 
 define( 'MWAI_ANTHROPIC_MODELS', [
   [
+    'model' => 'claude-fable-5-2',
+    'name' => 'Claude Fable 5.2',
+    'family' => 'claude-5',
+    'features' => ['completion'],
+    // Released 2026-11-09: $8 / $40 per million tokens (Anthropic release notes). Cache reads
+    // are assumed at 0.025x the input price, like Fable 5.1: check the pricing page.
+    'price' => [
+      'in' => 8.00,
+      'out' => 40.00,
+      'cached' => 0.20,
+    ],
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1000000,
+    'finetune' => false,
+    // Same surface as Fable 5.1 (always-on adaptive thinking, no temperature, no prefill,
+    // no forced tool_choice).
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'no-temperature', 'latest'],
+    'tools' => ['code_interpreter', 'thinking', 'web_search']
+  ],
+  [
     'model' => 'claude-fable-5-1',
     'name' => 'Claude Fable 5.1',
     'family' => 'claude-5',
@@ -1456,7 +1478,7 @@ define( 'MWAI_ANTHROPIC_MODELS', [
     // replayed thinking blocks are bound to the conversation prefix. Our engine
     // never forces tool_choice and only replays blocks append-only within the
     // function-call loop, so no special handling is needed.
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'no-temperature', 'latest'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'reasoning', 'mcp', 'no-temperature'],
     'tools' => ['code_interpreter', 'thinking', 'web_search']
   ],
   [
