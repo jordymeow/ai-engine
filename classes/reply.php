@@ -282,6 +282,27 @@ class Meow_MWAI_Reply implements JsonSerializable {
   }
 
   /**
+  * The text of a message's content. Most models send a string; thinking models on a
+  * Chat Completions API (Mistral Large) send a list of parts instead, thinking first and the
+  * answer in the "text" parts. A list reaching trim() was a fatal error.
+  */
+  public static function text_from_content( $content ) {
+    if ( !is_array( $content ) ) {
+      return is_scalar( $content ) ? (string) $content : '';
+    }
+    $text = '';
+    foreach ( $content as $part ) {
+      if ( is_string( $part ) ) {
+        $text .= $part;
+      }
+      else if ( is_array( $part ) && ( $part['type'] ?? 'text' ) === 'text' && isset( $part['text'] ) && is_string( $part['text'] ) ) {
+        $text .= $part['text'];
+      }
+    }
+    return $text;
+  }
+
+  /**
   * Set the choices from OpenAI as the results.
   * The last (or only) result is set as the result.
   * @param array $choices ID of the model to use.
@@ -303,7 +324,7 @@ class Meow_MWAI_Reply implements JsonSerializable {
 
           // It's text content
           if ( isset( $choice['message']['content'] ) ) {
-            $content = trim( $choice['message']['content'] );
+            $content = trim( self::text_from_content( $choice['message']['content'] ) );
             $this->results[] = $content;
             $this->result = $content;
           }

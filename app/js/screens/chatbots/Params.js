@@ -1,7 +1,7 @@
-// Previous: 3.9.0
-// Current: 3.9.5
+// Previous: 3.9.5
+// Current: 3.9.6
 
-```jsx
+```javascript
 // React & Vendor Libs
 const { useMemo, useState, useEffect, useRef } = wp.element;
 
@@ -37,7 +37,7 @@ const chatIcons = ['chat-openai.svg', 'chat-robot-1.svg', 'chat-robot-2.svg',
   'avatar-woman-blond.svg', 'avatar-woman-indian.svg', 'avatar-woman-asian.svg', 'avatar-woman-doctor.svg',
   'avatar-man-blond.svg', 'avatar-man-black.svg', 'avatar-man-sunglasses.svg', 'avatar-man-pirate.svg'];
 
-const iconLabel = (file) => file.replace(/\.svg$/, '').replace(/-/g, '');
+const iconLabel = (file) => file.replace(/\.svg$/, '').replace(/-/g, ' ');
 
 const ChatIconSelector = ({ label, valueName, updateShortcodeParams, icon }) => {
   const chatIcon = icon ? icon : 'chat-color-green.svg';
@@ -269,20 +269,20 @@ const ChatbotParams = (props) => {
   const modelSupportsVerbosity = useMemo(() => {
     return hasTag(currentModel, 'verbosity');
   }, [currentModel]);
-  
+
   const directVectorStoreIntegration = useMemo(() => {
     if (!shortcodeParams.embeddingsEnvId || !currentModel) {
       return false;
     }
-    
+
     const selectedEmbeddingsEnv = environments.find(env => env.id === shortcodeParams.embeddingsEnvId);
     if (!selectedEmbeddingsEnv || selectedEmbeddingsEnv.type !== 'openai-vector-store') {
       return false;
     }
-    
+
     const embeddingsOpenAIEnvId = selectedEmbeddingsEnv.openai_env_id;
     const modelEnvId = shortcodeParams.envId || options?.ai_default_env;
-    
+
     const aiEnv = aiEnvironments.find(env => env.id === modelEnvId);
     const isOpenAIEnvironment = !aiEnv || aiEnv.type === 'openai';
     const supportsResponsesAPI = modelSupportsResponses;
@@ -521,7 +521,7 @@ const ChatbotParams = (props) => {
     const availableTools = currentModel?.tools || [];
     const baseTitle = i18n.COMMON.TOOLS || 'Tools';
     const hasEnabledTools = tools.length > 0;
-    
+
     const supportedCount = tools.filter(tool => availableTools.includes(tool)).length;
     const unsupportedCount = tools.length - supportedCount;
     
@@ -681,8 +681,15 @@ const ChatbotParams = (props) => {
                     <NekoOption value="images" label="Images" />
                     <NekoOption value="assistant" label="Assistant" requirePro={!isRegistered} />
                     <NekoOption value="realtime" label="Realtime" requirePro={!isRegistered} />
-                    <NekoOption value="prompt" label="Prompt" requirePro={!isRegistered} />
+                    {isPrompt && <NekoOption value="prompt" label="Prompt (ends Nov 30, 2026)" requirePro={!isRegistered} />}
                   </NekoSelect>
+                  {isPrompt && (
+                    <NekoMessage variant="warning" style={{ marginTop: '10px' }}>
+                      <b>OpenAI is removing its Prompts on November 30, 2026.</b> After that date, this chatbot will stop answering.
+                      Switch Mode to <b>Chat</b>, paste your prompt's text into Instructions, and pick the same model.
+                      File Search works through Knowledge (an OpenAI Vector Store environment), and Code Interpreter is under Tools.
+                    </NekoMessage>
+                  )}
                   {isImagesChat && (
                     <NekoMessage variant="warning" style={{ marginTop: '10px' }}>
                       AI models are becoming increasingly multimodal. Pure image models are gradually disappearing as we can do more and more with images, including modifications and edits. This mode's usefulness and features are subject to significant changes as we adapt to these evolving capabilities. Please <a href="https://meowapps.com/contact/" target="_blank" rel="noopener noreferrer">contact us ↗</a> if you have strong ideas or specific use cases for this mode.
@@ -915,19 +922,4 @@ const ChatbotParams = (props) => {
                     <div style={{ flex: 1 }}>
                     <NekoInput name="allowedMimeTypes"
                       placeholder="image/png, image/jpeg, application/pdf"
-                      value={shortcodeParams.allowedMimeTypes || ''}
-                      onFinalChange={updateShortcodeParams}
-                    />
-                  </div>
-                  <NekoButton
-                    onClick={() => setMimeTypeSelectorOpen(true)}
-                    style={{ marginTop: 0, whiteSpace: 'nowrap' }}
-                  >
-                    {i18n.COMMON.SELECT_MIME_TYPES}
-                  </NekoButton>
-                </div>
-              </div>
-            </div>
-
-              <div className="mwai-builder-row">
-                <div className="mwai-builder-col" style={{ flex:
+                      value={shortcodeParams.allow

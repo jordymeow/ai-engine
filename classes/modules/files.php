@@ -477,6 +477,15 @@ class Meow_MWAI_Modules_Files {
     $target = empty( $target ) ? $this->core->get_option( 'image_local_upload' ) : $target;
     $expiry = empty( $expiry ) ? $this->core->get_option( 'image_expires' ) : $expiry;
 
+    // The Media Library is a public place: WordPress lists an unattached file to anyone through
+    // its own media routes. So it only receives what the site itself produces (generated images)
+    // and what a user allowed to upload media sends. A file handed over by a visitor, or by any
+    // user without that right, is private to them and goes to AI Engine's own storage, whatever
+    // the Local Upload setting says (Patchstack, 2026-11-24).
+    if ( $target === 'library' && $purpose !== 'generated' && !current_user_can( 'upload_files' ) ) {
+      $target = 'uploads';
+    }
+
     // Caller metadata may never use a key AI Engine sets itself. Through the Public API a
     // Subscriber could point file_id at someone else's file with an expiry in the past, or
     // set provider + file_id, and the cleanup task then deleted that file (Wordfence,
@@ -579,11 +588,22 @@ class Meow_MWAI_Modules_Files {
       if ( $purpose === 'generated' ) {
         add_action( 'add_attachment', $flag_generated );
       }
-      $id = media_handle_sideload( $file_array, 0 );
+      // Explicit title, description and caption: left to itself, WordPress fills them from the
+      // image's own embedded metadata (IPTC, EXIF), and a description is rendered with its
+      // shortcodes. The file can come from a visitor (chatbot upload), who chooses that metadata
+      // (Patchstack, 2026-11-23).
+      $post_data = [
+        'post_title' => sanitize_text_field( pathinfo( $unique_filename, PATHINFO_FILENAME ) ),
+        'post_content' => '',
+        'post_excerpt' => '',
+      ];
+      $id = media_handle_sideload( $file_array, 0, null, $post_data );
       remove_action( 'add_attachment', $flag_generated );
       if ( is_wp_error( $id ) ) {
         throw new Exception( $id->get_error_message() );
       }
+      // The alternative text comes from the same metadata.
+      delete_post_meta( $id, '_wp_attachment_image_alt' );
 
       $url = wp_get_attachment_url( $id );
       update_post_meta( $id, '_mwai_file_id', $refId );

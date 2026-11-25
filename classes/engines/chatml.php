@@ -802,6 +802,19 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
       else if ( isset( $json['choices'][0]['delta']['content'] ) ) {
         $handledCondition = true;
         $content = $json['choices'][0]['delta']['content'];
+        // Thinking models (Mistral Large) stream a list of parts: the thinking goes with the
+        // thinking, and only the "text" parts are the reply.
+        if ( is_array( $content ) ) {
+          foreach ( $content as $part ) {
+            if ( is_array( $part ) && ( $part['type'] ?? '' ) === 'thinking' ) {
+              $thought = Meow_MWAI_Reply::text_from_content( $part['thinking'] ?? '' );
+              if ( $thought !== '' ) {
+                $this->streamThinking = ( $this->streamThinking ?? '' ) . $thought;
+              }
+            }
+          }
+          $content = Meow_MWAI_Reply::text_from_content( $content );
+        }
       }
       else if ( isset( $json['choices'][0]['delta']['function_call'] ) ) {
         // TODO: Re-evaluate after 2027-01-26. Deprecated "function_call" stream path
@@ -1511,6 +1524,9 @@ class Meow_MWAI_Engines_ChatML extends Meow_MWAI_Engines_Core {
 
         // Strip inline <think> reasoning (Qwen-style models) from the reply.
         foreach ( $returned_choices as &$choice ) {
+          if ( isset( $choice['message']['content'] ) && is_array( $choice['message']['content'] ) ) {
+            $choice['message']['content'] = Meow_MWAI_Reply::text_from_content( $choice['message']['content'] );
+          }
           if ( isset( $choice['message']['content'] ) && is_string( $choice['message']['content'] ) ) {
             $choice['message']['content'] = self::strip_inline_thinking( $choice['message']['content'] );
           }

@@ -3127,7 +3127,9 @@ class Meow_MWAI_Labs_MCP_Core {
             @unlink( $tmp );
             throw new Exception( "Post #{$parent} was not found, or you are not allowed to edit it." );
           }
-          $id = media_handle_sideload( $file, $parent, $a['description'] ?? '' );
+          // No description or caption from the image's own embedded metadata (IPTC, EXIF): the
+          // file often comes from a URL nobody here wrote, and a description runs its shortcodes.
+          $id = media_handle_sideload( $file, $parent, $a['description'] ?? '', [ 'post_content' => '', 'post_excerpt' => '' ] );
           @unlink( $tmp );
           if ( is_wp_error( $id ) ) {
             throw new Exception( 'Sideload failed (' . $id->get_error_code() . '): ' . $id->get_error_message() );

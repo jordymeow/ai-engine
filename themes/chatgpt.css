@@ -1970,6 +1970,16 @@ body > textarea[aria-hidden=true][tabindex="-1"] {
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
+.mwai-chatgpt-theme .mwai-reply .mwai-text.mwai-rtl {
+  direction: rtl;
+}
+.mwai-chatgpt-theme .mwai-reply .mwai-text.mwai-ltr {
+  direction: ltr;
+}
+.mwai-chatgpt-theme .mwai-reply .mwai-text pre {
+  direction: ltr;
+  text-align: left;
+}
 .mwai-chatgpt-theme .mwai-reply .mwai-text li + li {
   margin-top: 0.25em;
 }

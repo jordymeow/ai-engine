@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.9.5
+Stable tag: 3.9.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -236,6 +236,19 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.9.6 (2026/11/25) =
+* Add: GPT-6.2 Sol and GPT-6.2 Astra models.
+* Add: Chatbot replies are announced to screen readers.
+* Add: Hebrew and Arabic messages read right to left, each message following its own text, even when the chatbot starts in English.
+* Add: Chatbots in Prompt mode show a warning, in their settings and to the site's admins, about OpenAI removing its Prompts on November 30, 2026.
+* Update: Files sent by visitors always stay in AI Engine's own storage; the Media Library only receives generated images and files from users allowed to upload media.
+* Update: Files added to the Media Library by AI Engine get their title, description and caption from AI Engine only, never from data embedded in the file.
+* Update: Qdrant is now the recommended cloud option when creating a Knowledge environment, and Chroma Cloud environments show the closing dates with a button to move them.
+* Update: The Mistral model list picks up new families by itself (Ministral 14B, Mistral Code, GLM 5), instead of a fixed list.
+* Update: Background tasks are only saved when they actually changed, instead of writing to the database on every page view.
+* Fix: Crash with Mistral Large, which sends its reply as a list of parts.
+* Fix: The form's submit button stayed disabled after pasting text with the mouse into a required field.
 
 = 3.9.5 (2026/11/22) =
 * Fix: Security: Chatbots now read their settings from a data block only the site can print, and a chatbot found without one runs nothing it was handed.

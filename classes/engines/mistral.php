@@ -217,6 +217,11 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
     // Fallback to cleaned model ID if no pattern matches
     if ( empty( $name ) ) {
       $name = ucwords( str_replace( ['-', '_'], ' ', $modelId ) );
+      // "Ministral 14b" reads better as "Ministral 14B", "Glm 5" as "GLM 5".
+      $name = preg_replace_callback( '/\b(\d+)b\b/', function ( $m ) {
+        return $m[1] . 'B';
+      }, $name );
+      $name = preg_replace( '/\bGlm\b/', 'GLM', $name );
     }
 
     return $name;
@@ -294,6 +299,8 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
           'moderation',      // Moderation models
           'ocr',            // OCR-specific models
           'transcribe',     // Transcription-specific models
+          'fim',            // Fill-in-the-middle code completion, not chat
+          'vibe-cli',       // The model behind Mistral's own command-line tool
         ];
 
         $shouldSkip = false;
@@ -494,9 +501,12 @@ class Meow_MWAI_Engines_Mistral extends Meow_MWAI_Engines_ChatML {
         // We're focusing on latest versions, so no versioned models
         $versionedModels = [];
 
-        // Check if this is a model we want to include
+        // Check if this is a model we want to include. Any "-latest" name counts, not only the
+        // ones listed above: that list is a snapshot, and a family Mistral adds later (Ministral
+        // 14B, Mistral Code) stayed invisible until someone edited it (HelpScout, 2026-11-24).
         $includeModel = in_array( $modelId, $preferredModels ) ||
                        in_array( $modelId, $versionedModels ) ||
+                       substr( $modelId, -7 ) === '-latest' ||
                        strpos( $modelId, 'embed' ) !== false; // Always include embedding models
 
         if ( !$includeModel ) {

@@ -28,6 +28,7 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
       }
 
       add_action( 'admin_notices', [ $this, 'mcp_onboarding_notice' ] );
+      add_action( 'admin_notices', [ $this, 'prompt_mode_notice' ] );
       add_action( 'admin_post_mwai_mcp_onboarding', [ $this, 'mcp_onboarding_action' ] );
 
       if ( $can_access_features ) {
@@ -593,6 +594,48 @@ class Meow_MWAI_Admin extends MeowKit_MWAI_Admin {
       . '<input type="hidden" name="action" value="mwai_mcp_onboarding"><input type="hidden" name="do" value="dismiss">'
       . '<button type="submit" class="button">' . esc_html__( 'No thanks', 'ai-engine' ) . '</button></form>'
       . '</div></div>';
+  }
+
+  /**
+  * OpenAI shuts its reusable prompts down on 2026-11-30, and a chatbot in Prompt mode stops
+  * answering that day. The warning in the chatbot's own settings only reaches whoever opens
+  * them, so the site's admins are told here too, on the Dashboard, the Plugins screen and
+  * AI Engine's screens, until no chatbot uses the mode any more.
+  * TODO: remove with the Prompt mode itself, after 2027-05-30.
+  */
+  public function prompt_mode_notice() {
+    if ( !$this->core->can_access_settings() ) {
+      return;
+    }
+    $screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+    $shown = $screen && ( in_array( $screen->id, [ 'dashboard', 'plugins' ], true ) || strpos( $screen->id, 'mwai' ) !== false );
+    if ( !$shown ) {
+      return;
+    }
+    $names = [];
+    foreach ( (array) $this->core->get_chatbots() as $chatbot ) {
+      if ( ( $chatbot['mode'] ?? '' ) === 'prompt' ) {
+        $names[] = $chatbot['name'] ?? $chatbot['botId'] ?? '';
+      }
+    }
+    $names = array_unique( array_filter( $names ) );
+    if ( empty( $names ) ) {
+      return;
+    }
+    $over = time() >= strtotime( '2026-11-30 00:00:00 UTC' );
+    $title = $over
+      ? __( 'OpenAI has removed its Prompts.', 'ai-engine' )
+      : __( 'OpenAI is removing its Prompts on November 30, 2026.', 'ai-engine' );
+    $text = sprintf(
+      /* translators: %s is a list of chatbot names. */
+      $over
+        ? _n( 'This chatbot uses the Prompt mode and no longer answers: %s.', 'These chatbots use the Prompt mode and no longer answer: %s.', count( $names ), 'ai-engine' )
+        : _n( 'This chatbot uses the Prompt mode and stops answering on that date: %s.', 'These chatbots use the Prompt mode and stop answering on that date: %s.', count( $names ), 'ai-engine' ),
+      implode( ', ', $names )
+    );
+    $how = __( 'In AI Engine → Chatbots, switch their Mode to Chat and paste the prompt\'s text into Instructions.', 'ai-engine' );
+    echo '<div class="notice ' . ( $over ? 'notice-error' : 'notice-warning' ) . '"><p><strong>'
+      . esc_html( $title ) . '</strong> ' . esc_html( $text ) . ' ' . esc_html( $how ) . '</p></div>';
   }
 
   public function mcp_onboarding_action() {

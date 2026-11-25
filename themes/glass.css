@@ -1508,6 +1508,16 @@ body > textarea[aria-hidden=true][tabindex="-1"] {
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
+.mwai-glass-theme .mwai-reply .mwai-text.mwai-rtl {
+  direction: rtl;
+}
+.mwai-glass-theme .mwai-reply .mwai-text.mwai-ltr {
+  direction: ltr;
+}
+.mwai-glass-theme .mwai-reply .mwai-text pre {
+  direction: ltr;
+  text-align: left;
+}
 .mwai-glass-theme .mwai-reply .mwai-text li + li {
   margin-top: 0.25em;
 }

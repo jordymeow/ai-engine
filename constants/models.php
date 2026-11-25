@@ -6,6 +6,68 @@
 
 define( 'MWAI_OPENAI_MODELS', [
   /*
+    GPT-6.2 Astra
+    OpenAI's most capable model, released 2026-11-17, and cheaper than GPT-6 Astra.
+    https://developers.openai.com/api/docs/models/gpt-6.2-astra
+    */
+  [
+    'model' => 'gpt-6.2-astra',
+    'name' => 'GPT-6.2 Astra',
+    'family' => 'gpt-6',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 8.00,
+      'out' => 40.00,
+      'cached' => 0.40,
+    ],
+    // Above 272K input tokens OpenAI bills the whole request higher (16 / 60 / 0.80). Not computed
+    // here: only the Sakana engine reads a long-context price today.
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1050000,
+    'finetune' => false,
+    // Same tags as GPT-6 Astra: 'responses' because tool calling goes through the Responses
+    // API, 'no-temperature' because a gpt-6 id escapes the engines' gpt-5 name check.
+    // Text, history, streaming, functions, Knowledge, vision and PDF verified live 2026-11-23,
+    // like GPT-6.2 Sol below.
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'no-temperature', 'latest'],
+    'tools' => ['web_search', 'image_generation', 'code_interpreter'],
+    'params' => [
+      // No 'none': the model page says the API rejects it.
+      'reasoning' => ['low', 'medium', 'high', 'xhigh', 'max']
+    ]
+  ],
+  /*
+    GPT-6.2 Sol
+    OpenAI's go-to model for everyday work, released 2026-11-17, at GPT-6.1 Sol's prices.
+    https://developers.openai.com/api/docs/models/gpt-6.2-sol
+    */
+  [
+    'model' => 'gpt-6.2-sol',
+    'name' => 'GPT-6.2 Sol',
+    'family' => 'gpt-6',
+    'features' => ['completion'],
+    'price' => [
+      'in' => 2.00,
+      'out' => 10.00,
+      'cached' => 0.10,
+    ],
+    // Above 272K input tokens OpenAI bills the whole request higher (4 / 15 / 0.20). Not computed
+    // here: only the Sakana engine reads a long-context price today.
+    'type' => 'token',
+    'unit' => 1 / 1000000,
+    'maxCompletionTokens' => 128000,
+    'maxContextualTokens' => 1050000,
+    'finetune' => false,
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'no-temperature'],
+    'tools' => ['web_search', 'image_generation', 'code_interpreter'],
+    'params' => [
+      // No 'none': the model page says the API rejects it.
+      'reasoning' => ['low', 'medium', 'high', 'xhigh', 'max']
+    ]
+  ],
+  /*
     GPT-6 Astra
     OpenAI's flagship, released 2026-09-03. Tool calling only works through the
     Responses API, which the 'responses' tag already forces for this model.
@@ -30,7 +92,7 @@ define( 'MWAI_OPENAI_MODELS', [
     // 'no-temperature': the API answers 400 "Unsupported parameter: 'temperature'" for this
     // model. The GPT-5 line is caught by a name check in the engines, which a gpt-6 id does
     // not match, so the tag is what stops us sending it (verified live 2026-09-05).
-    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'no-temperature', 'latest'],
+    'tags' => ['core', 'chat', 'vision', 'files', 'functions', 'json', 'responses', 'mcp', 'reasoning', 'no-temperature'],
     // image_generation verified live 2026-09-26 (Responses API returned an image_generation_call).
     'tools' => ['web_search', 'image_generation', 'code_interpreter'],
     'params' => [

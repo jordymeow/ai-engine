@@ -188,12 +188,18 @@ class Meow_MWAI_Modules_Tasks {
     $now = gmdate( 'Y-m-d H:i:s' );
 
     if ( $existing ) {
-      // Update existing task
-      $update_data = [
-        'description' => $args['description'],
-        'category' => $args['category'],
-        'updated' => $now,
-      ];
+      // Update existing task, and only what differs. ensure() runs on every page load (the
+      // Knowledge tasks register on init, public pages included), and it used to rewrite the
+      // row each time just to refresh "updated": two UPDATEs per uncached page view, up to
+      // half of a page's SQL time (Julien Biscarat, 2026-11-25). It also kept "updated" so
+      // fresh that reset_stuck_tasks() could never see a task stuck in "running".
+      $update_data = [];
+      if ( (string) $args['description'] !== (string) $existing->description ) {
+        $update_data['description'] = $args['description'];
+      }
+      if ( (string) $args['category'] !== (string) $existing->category ) {
+        $update_data['category'] = $args['category'];
+      }
 
       // Only update these if they've changed
       if ( $args['schedule'] !== $existing->schedule ) {
@@ -214,12 +220,20 @@ class Meow_MWAI_Modules_Tasks {
       if ( $args['data'] !== null ) {
         $existing_data = json_decode( $existing->data, true ) ?: [];
         $merged_data = array_merge( $existing_data, $args['data'] );
-        $update_data['data'] = json_encode( $merged_data );
+        if ( $merged_data != $existing_data ) {
+          $update_data['data'] = json_encode( $merged_data );
+        }
       }
 
-      if ( $args['step_name'] !== null ) {
+      if ( $args['step_name'] !== null && (string) $args['step_name'] !== (string) $existing->step_name ) {
         $update_data['step_name'] = $args['step_name'];
       }
+
+      // Nothing to change: no write.
+      if ( empty( $update_data ) ) {
+        return true;
+      }
+      $update_data['updated'] = $now;
 
       $result = $this->wpdb->update(
         $this->table_tasks,

@@ -1960,7 +1960,8 @@ class Meow_MWAI_Labs_MCP {
       'tmp_name' => $uploaded['tmp_name'],
     ];
 
-    $attachment_id = media_handle_sideload( $file, 0, $data['description'] );
+    // No description or caption from the image's own embedded metadata (see mcp-core.php).
+    $attachment_id = media_handle_sideload( $file, 0, $data['description'], [ 'post_content' => '', 'post_excerpt' => '' ] );
     if ( is_wp_error( $attachment_id ) ) {
       return new WP_REST_Response( [ 'success' => false, 'message' => $attachment_id->get_error_message() ], 500 );
     }
