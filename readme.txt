@@ -5,7 +5,7 @@ Donate link: https://www.patreon.com/meowapps
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 3.9.6
+Stable tag: 3.9.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -236,6 +236,12 @@ Start with the [Basics guide](https://ai.thehiddendocs.com/basics/) for installa
 Report security vulnerabilities through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fbbbc-964a-4204-8bc0-198f21284efd).
 
 == Changelog ==
+
+= 3.9.7 (2026/11/26) =
+* Fix: Gemini ran every streamed tool call with empty arguments, in the Workspace and in chatbots.
+* Fix: Local Memory now keeps a separate conversation per signed-in user, so the next person signing in on a shared browser no longer sees the previous chat.
+* Fix: A file the site refuses to store (HTML, PHP, JavaScript made by Code Interpreter) now says so and suggests a ZIP, instead of showing "temporarily unavailable, refresh to retry".
+* Fix: The Editor Assistant lost the earlier steps of a multi-step request, which made Claude Opus 4.5 fail with an invalid thinking signature.
 
 = 3.9.6 (2026/11/25) =
 * Add: GPT-6.2 Sol and GPT-6.2 Astra models.

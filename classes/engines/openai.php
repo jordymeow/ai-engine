@@ -2652,9 +2652,11 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
           $retryDelay *= 2; // exponential backoff
         }
 
+        $this->containerFileRefused = false;
         $publicUrl = $this->download_container_file( $containerId, $fileId, $filename, $query );
 
-        if ( $publicUrl ) {
+        // A refused type (HTML, PHP, JavaScript...) will be refused again: no point retrying.
+        if ( $publicUrl || $this->containerFileRefused ) {
           break;
         }
       }
@@ -2667,11 +2669,18 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       }
       else {
 
-        // If download fails, create a message about it
+        // If download fails, create a message about it. A refused file type gets its own
+        // message: "refresh to retry" sent users retrying something that can never work
+        // (PrimalMogul, 2026-11-25).
         $errorMessage = sprintf(
-          '[File: %s - Download temporarily unavailable, refresh page to retry]',
+          $this->containerFileRefused ?
+            '[File: %s - This type of file cannot be saved on this site. Ask for it as a ZIP file instead.]' :
+            '[File: %s - Download temporarily unavailable, refresh page to retry]',
           $filename
         );
+        // The model writes the file as a Markdown link: replace the whole link, or the notice
+        // ends up as the address of a link that leads nowhere.
+        $content = preg_replace( '/\[[^\]]*\]\(' . preg_quote( $sandboxPath, '/' ) . '\)/', $errorMessage, $content );
         $content = str_replace( $sandboxPath, $errorMessage, $content );
         $replacements++;
       }
@@ -2819,6 +2828,9 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
   /**
    * Download a file from container and store it locally
    */
+  // True when the last download_container_file() failed because the site refuses that file type.
+  private $containerFileRefused = false;
+
   protected function download_container_file( $containerId, $fileId, $filename, $query ) {
     try {
       $fileContent = null;
@@ -2898,6 +2910,7 @@ class Meow_MWAI_Engines_OpenAI extends Meow_MWAI_Engines_ChatML {
       return $publicUrl;
     }
     catch ( Exception $e ) {
+      $this->containerFileRefused = $e->getMessage() === 'File type is not allowed.';
       error_log( '[AI Engine] EXCEPTION in download_container_file: ' . $e->getMessage() );
       error_log( '[AI Engine] Stack trace: ' . $e->getTraceAsString() );
       Meow_MWAI_Logging::warn( 'Failed to download container file ' . $filename . ': ' . $e->getMessage() );

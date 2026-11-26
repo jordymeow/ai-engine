@@ -421,7 +421,16 @@ class Meow_MWAI_Engines_GoogleInteractions extends Meow_MWAI_Engines_Core {
       if ( ( $step['type'] ?? '' ) === 'function_call' ) {
         $index = $json['index'] ?? count( $this->streamToolCalls );
         $args = $step['arguments'] ?? '';
-        $argsJson = is_string( $args ) ? $args : wp_json_encode( $args );
+        // Gemini now opens the call with empty arguments ({}) and streams the real ones as
+        // arguments_delta. Starting from "[]" or "{}" and appending the delta gave invalid
+        // JSON, so every streamed tool ran with no arguments at all: wp_create_post said
+        // "post_title required", wp_get_users ignored its limit (Steven, 2026-11-26).
+        if ( is_string( $args ) ) {
+          $argsJson = in_array( trim( $args ), [ '{}', '[]' ], true ) ? '' : $args;
+        }
+        else {
+          $argsJson = empty( $args ) ? '' : wp_json_encode( $args );
+        }
         $this->streamToolCalls[$index] = [
           'id' => $step['id'] ?? null,
           'name' => $step['name'] ?? '',
